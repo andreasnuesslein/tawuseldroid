@@ -1,0 +1,16 @@
+
+gs
+project/project
+project/target
+target
+tmp
+.history
+dist
+*.swp
+.classpath
+.project
+.cache
+.settings
+.buildpath
+bin
+gen/

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<resources>
+    <string name="hello">Hello World, TaxiMobAndroidActivity!</string>
+    <string name="app_name">Tawuseldroid</string>
+
+    <string name="register_head">Register</string>
+    <string name="register_firstname">First name</string>
+    <string name="register_lastname">Last name</string>
+    <string name="register_email">Email</string>
+    <string name="register_mobilephone">Mobile phone</string>
+    <string name="register_password">Password</string>
+    <string name="register_repeatpassword">Repeat password</string>
+    <string name="register_button">Register now!</string>
+
+	<string name="login_head">Login</string>
+	<string name="login_loginbutton">Login now!</string>
+	<string name="login_registerbutton">Register first!</string>
+    
+    <string name="tours_head">Tours</string>
+    <string name="tours_fromColumnHead">From</string>
+    <string name="tours_toColumnHead">To</string>
+    <string name="tours_timeColumnHead">Time</string>
+    <string name="tours_newTour">Create new tour</string>
+</resources>
