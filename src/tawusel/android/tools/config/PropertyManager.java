@@ -33,11 +33,14 @@ public class PropertyManager {
 	private static final String BOOKED_TOUR_COLOR = "i_BookedTour_Color";
 	private static final String TEMPLATE_TOUR_COLOR = "i_TemplateTour_Color";
 	private static final String ACTIVE_TOUR_COLOR = "i_ActiveTour_Color";
+	private static final String JSON_SERVER = "s_JSON_Server";
 	
 	//default values
 	private static int defaultBookedTourColor = Color.WHITE;
 	private static int defaultTemplateTourColor = Color.BLACK;
-	private static int defaultActiveTourColor = Color.GREEN;	
+	private static int defaultActiveTourColor = Color.GREEN;
+	private static String defaultJSONServer = "http://localhost:9000/";
+	
 
 	public static void loadConfiguration(Context context) {
 		Resources resources = context.getResources();
@@ -63,6 +66,14 @@ public class PropertyManager {
 		return getIntProperty(ACTIVE_TOUR_COLOR, defaultActiveTourColor);
 	}
 	
+	public static String getJSONServer() {
+		String str = getStringProperty(JSON_SERVER, defaultJSONServer);
+		return str;
+		
+	}
+	
+	
+	
 	@SuppressWarnings("unused")
 	private static void setPositiveIntegerInConfiguration(final String name, final int value) {
 		if (value >= 0) {
@@ -83,16 +94,16 @@ public class PropertyManager {
 		}		 
 	}
 	
-	@SuppressWarnings("unused")
 	private static String getStringProperty(String propName, String defaults) {
-		String value;
+		String value="";
 		try {
 			value = properties.getProperty(propName);
-			return value;
 		} catch (Exception e) {
+			value = defaults;
 			properties.setProperty(propName, defaults);
-			return defaults;
-		}	
+		} finally {
+			return value;
+		}
 	}
 	
 	@SuppressWarnings("unused")
