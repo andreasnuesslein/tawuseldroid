@@ -65,6 +65,11 @@
 		    android:layout_weight="1"/>
 	</TableRow>
 
+	<CheckBox
+	    android:id="@+id/login_cbKeepMeLoggedIn"
+	    android:layout_width="wrap_content"
+	    android:layout_height="wrap_content"
+	    android:text="@string/login_loggedincheckbox" />
 	<Button
 	    android:id="@+id/login_bLogin"
 	    android:layout_width="wrap_content"
