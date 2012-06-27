@@ -98,11 +98,10 @@ public class PropertyManager {
 		String value="";
 		try {
 			value = properties.getProperty(propName);
-		} catch (Exception e) {
-			value = defaults;
-			properties.setProperty(propName, defaults);
-		} finally {
 			return value;
+		} catch (Exception e) {
+			properties.setProperty(propName, defaults);
+			return defaults;
 		}
 	}
 	

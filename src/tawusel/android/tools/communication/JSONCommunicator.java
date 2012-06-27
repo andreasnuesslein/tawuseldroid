@@ -26,16 +26,9 @@ import tawusel.android.tools.config.PropertyManager;
 import android.util.Log;
 import android.widget.Toast;
 
-/**
- * @author mareikeziese
- * 
- */
 public class JSONCommunicator {
 
-	// Bezeichnung der Klasse:
-
 	private static final String TAG = "JSONCommunicator";
-	private static final String JSONServer = "http://10.0.2.2:9000/";
 
 	/**
 	 * Get the json-result of the url
@@ -45,10 +38,8 @@ public class JSONCommunicator {
 	 * @return JSONObject
 	 */
 	@SuppressWarnings("finally")
-	public static JSONObject getJSONObject(String method, String params) throws ClientProtocolException{
-		// String host = PropertyManager.getJSONServer();
-		// Log.i(TAG,host);
-		String url = JSONServer + method + params;
+	public static JSONObject getJSONObject(String method, String params, String serverUrl) throws ClientProtocolException{
+		String url = serverUrl + method + params;
 		Log.i(TAG, url);
 		HttpClient httpClient = new DefaultHttpClient();
 		HttpGet httpGet = new HttpGet(url);

@@ -68,6 +68,7 @@ public class Database {
 			result.add(c.getString(iMail));
 			result.add(c.getString(iPassword));
 		}
+		c.close();
 		return result;
 	}
 	

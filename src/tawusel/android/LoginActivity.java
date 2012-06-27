@@ -26,7 +26,7 @@ import android.widget.Toast;
 public class LoginActivity extends Activity implements OnClickListener {
 	private EditText etUsername, etPassword;
 	private CheckBox cbKeepMeLoggedIn;
-    private Button btnLogin;
+    private Button bLogin;
     
     Database db = new Database(LoginActivity.this);
 	
@@ -35,15 +35,13 @@ public class LoginActivity extends Activity implements OnClickListener {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.login);
+     
+        //load .properties file
+        PropertyManager.loadConfiguration(this);
         
         initDatabase();
-        
-        //load .properties file
-//        PropertyManager.loadConfiguration(this);
-        
         initFields();
-        btnLogin.setOnClickListener(this);
-      
+        bLogin.setOnClickListener(this);
     }
     
     private void initDatabase() {
@@ -65,11 +63,11 @@ public class LoginActivity extends Activity implements OnClickListener {
         etUsername = (EditText)findViewById(R.id.login_etEmail);
         etPassword = (EditText)findViewById(R.id.login_etPassword);
         cbKeepMeLoggedIn = (CheckBox)findViewById(R.id.login_cbKeepMeLoggedIn);
-        btnLogin = (Button)findViewById(R.id.login_bLogin); 
+        bLogin = (Button)findViewById(R.id.login_bLogin); 
     }
     
     public void onClick(View v) {
-    	if (v == btnLogin) {
+    	if (v == bLogin) {
     		String userEmail = etUsername.getText().toString();
     		String hashedPassword = JSONCommunicator.getHashString(etPassword.getText().toString());
     		tryToLogin(userEmail, hashedPassword);
@@ -79,10 +77,9 @@ public class LoginActivity extends Activity implements OnClickListener {
     public void tryToLogin(String userEmail, String hashedPassword){
     	if (!(userEmail.isEmpty())){
 			try {
-				
 	    		String encodedEMail = URLEncoder.encode(userEmail);
 	    		String params = encodedEMail+"/"+hashedPassword;
-				JSONObject jsonUser = JSONCommunicator.getJSONObject("authentificateByApp/",params);
+				JSONObject jsonUser = JSONCommunicator.getJSONObject("authentificateByApp/", params, PropertyManager.getJSONServer());
 	    		if (jsonUser == null){
 	    			Toast.makeText(this,"Login failed. Email and/or password doesn't match.",Toast.LENGTH_LONG).show();
 	    		} else {
