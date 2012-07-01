@@ -30,16 +30,16 @@ public class PropertyManager {
 	protected static Properties properties = new Properties();
 	
 	//stings
-	private static final String BOOKED_TOUR_COLOR = "i_BookedTour_Color";
+	private static final String AVAILABLE_TOUR_COLOR = "i_AvailableTour_Color";
 	private static final String TEMPLATE_TOUR_COLOR = "i_TemplateTour_Color";
 	private static final String ACTIVE_TOUR_COLOR = "i_ActiveTour_Color";
 	private static final String JSON_SERVER = "s_JSON_Server";
 	
 	//default values
-	private static int defaultBookedTourColor = Color.WHITE;
-	private static int defaultTemplateTourColor = Color.BLACK;
+	private static int defaultAvailableTourColor = Color.WHITE;
+	private static int defaultTemplateTourColor = Color.BLUE;
 	private static int defaultActiveTourColor = Color.GREEN;
-	private static String defaultJSONServer = "http://localhost:9000/";
+	private static String defaultJSONServer = "http://10.0.2.2:9000/";
 	
 
 	public static void loadConfiguration(Context context) {
@@ -54,8 +54,8 @@ public class PropertyManager {
 		}
 	}
 	
-	public static int getBookedTourColor() {
-		return getIntProperty(BOOKED_TOUR_COLOR, defaultBookedTourColor);
+	public static int getAvailableTourColor() {
+		return getIntProperty(AVAILABLE_TOUR_COLOR, defaultAvailableTourColor);
 	}
 	
 	public static int getTemplateTourColor() {
@@ -71,8 +71,6 @@ public class PropertyManager {
 		return str;
 		
 	}
-	
-	
 	
 	@SuppressWarnings("unused")
 	private static void setPositiveIntegerInConfiguration(final String name, final int value) {

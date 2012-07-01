@@ -13,6 +13,7 @@ public class Database {
 	public static final String KEY_ID = "_id"; 
 	public static final String KEY_EMAIL = "email";
 	public static final String KEY_PASSWORD = "password";
+	public static final String KEY_STAY_LOGGED_IN = "stay_logged_in";
 
 	private static final String DATABASE_NAME = "TawuselHandyDB";
 	private static final String TABLE_NAME = "loggedInUser";
@@ -36,37 +37,27 @@ public class Database {
 		dbHelper.close();
 	}
 	
-	public void setUserLoggedIn(String email, String password) {
+	public void setUserLoggedIn(String email, String password, int stayLoggedIn) {
 		ContentValues cv = new ContentValues();
 		cv.put(KEY_EMAIL, email);
 		cv.put(KEY_PASSWORD, password);
+		cv.put(KEY_STAY_LOGGED_IN, stayLoggedIn);
 		database.insert(TABLE_NAME, null, cv);
 	}
 	
-	public Vector<String> getData() {
-		String[] columns = new String[] {KEY_ID, KEY_EMAIL,KEY_PASSWORD};
-		Cursor c = database.query(TABLE_NAME, columns, null, null, null, null, null);
-		Vector<String> result = new Vector<String>();
-		
-		int iName = c.getColumnIndex(KEY_EMAIL);
-		
-		for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
-			result.add(c.getString(iName)); 
-		}
-		return result;
-	}
-	
 	public Vector<String> getLoggedInUser() {
-		String[] columns = new String[] {KEY_ID, KEY_EMAIL,KEY_PASSWORD};
+		String[] columns = new String[] {KEY_ID, KEY_EMAIL,KEY_PASSWORD,KEY_STAY_LOGGED_IN};
 		Cursor c = database.query(TABLE_NAME, columns, null, null, null, null, null);
 		Vector<String> result = new Vector<String>();
 
 		int iMail = c.getColumnIndex(KEY_EMAIL);
 		int iPassword = c.getColumnIndex(KEY_PASSWORD);
+		int iStayLoggedIn = c.getColumnIndex(KEY_STAY_LOGGED_IN);
 		
 		for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
 			result.add(c.getString(iMail));
 			result.add(c.getString(iPassword));
+			result.add(Integer.toString(c.getInt(iStayLoggedIn)));
 		}
 		c.close();
 		return result;
@@ -74,6 +65,10 @@ public class Database {
 	
 	public void clearTable(){
 		database.delete(TABLE_NAME, KEY_ID + "> 0", null);
+	}
+	
+	public void resetDatabase() {
+		dbHelper.onUpgrade(database,0, 1);
 	}
 	
 	private static class DBHelper extends SQLiteOpenHelper {
@@ -86,8 +81,9 @@ public class Database {
 		public void onCreate(SQLiteDatabase db) {
 			db.execSQL("CREATE TABLE " + TABLE_NAME + " (" +
 					KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
-					KEY_EMAIL + " TEXT NOT NULL, "+
-					KEY_PASSWORD + " TEXT NOT NULL);"
+					KEY_EMAIL + " TEXT NOT NULL, " +
+					KEY_PASSWORD + " TEXT NOT NULL, " +
+					KEY_STAY_LOGGED_IN + " INT NOT NULL);"
 					);
 		}
 

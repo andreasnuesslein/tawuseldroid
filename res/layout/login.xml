@@ -43,6 +43,7 @@
 		    android:layout_width="0dip"
 		    android:layout_height="wrap_content"
 		    android:inputType="textEmailAddress"
+		    android:text="test.test@carmeq.com"
 		    android:layout_weight="1"/>
 	</TableRow>
 
@@ -62,6 +63,7 @@
 		    android:layout_width="0dip"
 		    android:layout_height="wrap_content"
 		    android:inputType="textPassword"
+		    android:text="123456"
 		    android:layout_weight="1"/>
 	</TableRow>
 

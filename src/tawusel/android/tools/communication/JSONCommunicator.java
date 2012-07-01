@@ -18,13 +18,9 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpParams;
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
-import tawusel.android.tools.config.PropertyManager;
-
 import android.util.Log;
-import android.widget.Toast;
 
 public class JSONCommunicator {
 
@@ -36,9 +32,37 @@ public class JSONCommunicator {
 	 * @param String
 	 *            url
 	 * @return JSONObject
+	 * @throws Exception  
 	 */
-	@SuppressWarnings("finally")
-	public static JSONObject getJSONObject(String method, String params, String serverUrl) throws ClientProtocolException{
+	public static JSONArray getJSONArray(String method, String params, String serverUrl) throws Exception {
+		String url = serverUrl + method + params;
+		Log.i(TAG, url);
+		HttpClient httpClient = new DefaultHttpClient();
+		HttpGet httpGet = new HttpGet(url);
+		HttpResponse response;
+		JSONArray json = null;
+
+		try {
+			response = httpClient.execute(httpGet);
+			Log.i(TAG, response.getStatusLine().toString());
+			HttpEntity entity = response.getEntity();
+			
+			if (entity != null) {
+				String httpResultContent = getResultContent(entity); 
+				Log.i(TAG, httpResultContent);
+				json = new JSONArray(httpResultContent);
+			}
+			
+			httpGet.abort();
+		} catch (Exception e) {
+			httpGet.abort();
+			e.printStackTrace();
+			throw e;
+		}
+		return json;
+	}
+
+	public static JSONObject getJSONObject(String method, String params, String serverUrl) throws Exception {
 		String url = serverUrl + method + params;
 		Log.i(TAG, url);
 		HttpClient httpClient = new DefaultHttpClient();
@@ -48,40 +72,36 @@ public class JSONCommunicator {
 
 		try {
 			response = httpClient.execute(httpGet);
-			// TODO: HTTP-Status (z.B. 404) in eigener Anwendung verarbeiten.
 			Log.i(TAG, response.getStatusLine().toString());
 			HttpEntity entity = response.getEntity();
+			
 			if (entity != null) {
-				InputStream instream = entity.getContent();
-				BufferedReader reader = new BufferedReader(
-						new InputStreamReader(instream));
-				StringBuilder sb = new StringBuilder();
-				String line = null;
-				while ((line = reader.readLine()) != null)
-					sb.append(line + "n");
-				String result = sb.toString();
-				Log.i(TAG, result);
-				instream.close();
-				json = new JSONObject(result);
-				JSONArray nameArray = json.names();
-				JSONArray valArray = json.toJSONArray(nameArray);
-				for (int i = 0; i < valArray.length(); i++) {
-					// TODO: Inhalte der Arrays verarbeiten
-				}
+				String httpResultContent = getResultContent(entity); 
+				Log.i(TAG, httpResultContent);
+				json = new JSONObject(httpResultContent);
 			}
-		} catch (ClientProtocolException e) {
-
-			throw e;
-
-		} catch (Exception e) {
-
-			e.printStackTrace();
-
-		} finally {
+			
 			httpGet.abort();
-			return json;
-
+		} catch (Exception e) {
+			httpGet.abort();
+			e.printStackTrace();
+			throw e;
 		}
+		return json;
+	}
+
+	
+	private static String getResultContent(HttpEntity entity) throws IllegalStateException, IOException {
+		InputStream instream = entity.getContent();
+		BufferedReader reader = new BufferedReader(
+				new InputStreamReader(instream));
+		StringBuilder sb = new StringBuilder();
+		String line = null;
+		while ((line = reader.readLine()) != null)
+			sb.append(line + "n");
+		instream.close();
+		return sb.toString();
+		
 	}
 
 	public static String getHashString(String hstr){

@@ -3,7 +3,6 @@ package tawusel.android;
 import java.net.URLEncoder;
 import java.util.Vector;
 
-import org.apache.http.client.ClientProtocolException;
 import org.json.JSONObject;
 
 import tawusel.andorid.R;
@@ -11,8 +10,8 @@ import tawusel.android.database.Database;
 import tawusel.android.tools.communication.JSONCommunicator;
 import tawusel.android.tools.config.PropertyManager;
 import tawusel.android.ui.TourActivity;
+import tawusel.android.ui.helper.Error;
 import android.app.Activity;
-import android.app.Dialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
@@ -20,8 +19,6 @@ import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.TextView;
-import android.widget.Toast;
 
 public class LoginActivity extends Activity implements OnClickListener {
 	private EditText etUsername, etPassword;
@@ -47,12 +44,15 @@ public class LoginActivity extends Activity implements OnClickListener {
     private void initDatabase() {
     	try {
 			db.openDatabase();
+			db.resetDatabase();
 			Vector<String> loggedInUserData = db.getLoggedInUser();
 			if(!loggedInUserData.isEmpty()) {
-				tryToLogin(loggedInUserData.get(0), loggedInUserData.get(1));
+				String email = loggedInUserData.get(0);
+				String hashedPassword = loggedInUserData.get(1);
+				tryToLogin(email, hashedPassword);
 			}
 		} catch (Exception e) {
-			createErrorDialog(e);
+			Error.createDialog(this, e.toString(), e.getMessage());
 		} finally {
 			db.closeDatabase();
 		}
@@ -79,32 +79,35 @@ public class LoginActivity extends Activity implements OnClickListener {
 			try {
 	    		String encodedEMail = URLEncoder.encode(userEmail);
 	    		String params = encodedEMail+"/"+hashedPassword;
-				JSONObject jsonUser = JSONCommunicator.getJSONObject("authentificateByApp/", params, PropertyManager.getJSONServer());
+				JSONObject jsonUser = JSONCommunicator.getJSONObject("authenticateByApp/", params, PropertyManager.getJSONServer());
 	    		if (jsonUser == null){
-	    			Toast.makeText(this,"Login failed. Email and/or password doesn't match.",Toast.LENGTH_LONG).show();
+	    			Error.createDialog(this, "Login failed", "Email and/or password doesn't match.");
 	    		} else {
 	    			performLogingAction(userEmail, hashedPassword);
 	    		}
-			} catch (ClientProtocolException e) {
-				createErrorDialog(e);
+			} catch (Exception e) {
+				Error.createDialog(this, e.toString(), e.getMessage());
 			}
     	} else {
-    		Toast.makeText(this,"Login failed. Email was empty.",Toast.LENGTH_LONG).show();
+    		Error.createDialog(this, "Login failed", "Email field was empty");
     	}
     }
 
     private void performLogingAction(String email, String hashedPassword) {
-		if(cbKeepMeLoggedIn != null && cbKeepMeLoggedIn.isChecked()) {
-			//save the setting in the db
-			try {
-				db.openDatabase();
-				db.clearTable();
-				db.setUserLoggedIn(email, hashedPassword);
-			} catch(Exception e) {
-				createErrorDialog(e);
-			} finally {
-				db.closeDatabase();
+    	//save the setting in the db
+		try {
+			db.openDatabase();
+			db.clearTable();
+    	
+			if(cbKeepMeLoggedIn != null && cbKeepMeLoggedIn.isChecked()) {
+				db.setUserLoggedIn(email, hashedPassword, 1);
+			} else {
+				db.setUserLoggedIn(email, hashedPassword, 0);
 			}
+		} catch(Exception e) {
+			Error.createDialog(this, e.toString(), e.getMessage());
+		} finally {
+			db.closeDatabase();
 		}
 		openTourActivity();
 	}
@@ -113,14 +116,4 @@ public class LoginActivity extends Activity implements OnClickListener {
     	Intent i = new Intent(LoginActivity.this, TourActivity.class);
 		startActivity(i);
     }
-    
-	private void createErrorDialog(Exception e) {
-		Dialog dialog = new Dialog(this);
-		dialog.setTitle(e.toString());
-		TextView tv = new TextView(this);
-		tv.setText(e.getMessage());
-		dialog.setContentView(tv);
-		dialog.show();
-	}
-    
 } 

@@ -18,7 +18,7 @@
     <string name="tours_fromColumnHead">From</string>
     <string name="tours_toColumnHead">To</string>
     <string name="tours_timeColumnHead">Time</string>
-    <string name="tours_newTour">Add tour</string>
+    <string name="menu_newTour">Add tour</string>
     <string name="menu_logout">Log out</string>
     <string name="menu_help">Help</string>
 </resources>

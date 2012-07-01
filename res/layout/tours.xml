@@ -21,13 +21,6 @@
 		    android:layout_height="wrap_content"
 		    android:text="@string/tours_head"
 		    android:textAppearance="?android:attr/textAppearanceLarge" />
-
-		<Button
-		    android:id="@+id/tours_bCreateNewTour"
-		    android:layout_width="wrap_content"
-		    android:layout_height="wrap_content"
-		    android:text="@string/tours_newTour" 
-		    android:layout_gravity="right"/>
 		</TableRow>
 		
 		<View
@@ -43,7 +36,7 @@
 		android:layout_width="fill_parent"
     	android:layout_height="wrap_content"
     	android:orientation="vertical"
-        android:id="@+id/tours_headTable">
+        android:id="@+id/tours_tourTable">
 		
 		<TableRow
 		    android:id="@+id/tours_trTableHead"
@@ -59,7 +52,7 @@
 			
 			<TextView
 			    android:id="@+id/tours_tvTo"
-			    android:layout_width="wrap_content"
+			    android:layout_width="0dip"
 			    android:layout_height="wrap_content"
 			    android:text="@string/tours_toColumnHead" 
 			    android:layout_weight="1"/>
