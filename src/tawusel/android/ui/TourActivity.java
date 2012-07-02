@@ -94,7 +94,6 @@ public class TourActivity extends Activity {
 	}
 	
 	private void getToursFromWebservice(String methodName, boolean isTemplateTour) throws Exception {
-		
 		Vector<String> userEntry = getLoggedInUser();
 		String encodedEMail = URLEncoder.encode(userEntry.get(0));
 		JSONArray jsonTours = JSONCommunicator.getJSONArray(methodName, encodedEMail, PropertyManager.getJSONServer());
@@ -183,60 +182,16 @@ public class TourActivity extends Activity {
 	}
 
 	private void addTourRow(String[] tour) {
-		TableRow newRow = new TableRow(this);
-		newRow.setLayoutParams(new LayoutParams(
-				LayoutParams.FILL_PARENT, 
-				LayoutParams.WRAP_CONTENT));
-		
-		
-		//set the background color of the row
 		TourKind tourKind = parseTourKind(tour[9]);
-		switch (tourKind) {
-		case ACTIVE:
-			newRow.setBackgroundResource(R.drawable.active_row_shape);
-			break;
-		case TEMPLATE:
-			newRow.setBackgroundResource(R.drawable.template_row_shape);
-			break;
-		case AVAILABLE:
-			newRow.setBackgroundResource(R.drawable.available_row_shape);
-			break;
-		default:
-			break;
-		}
 		
-		//create the from column
-		TextView fromText = new TextView(this);
-		fromText.setLayoutParams(new LayoutParams(0, LayoutParams.FILL_PARENT, 1));
-		if(tourKind==TourKind.AVAILABLE) {
-			fromText.setTextColor(Color.BLACK);
-		} else {
-			fromText.setTextColor(Color.WHITE);
-		}
-		fromText.setText(tour[2]);
-		newRow.addView(fromText);
+		TableRow newRow = createNewRowLayout(tourKind);
+		TextView tvFrom = createNewColumnText(tour[2], tourKind);
+		TextView tvTo = createNewColumnText(tour[3], tourKind);
+		TextView tvTime = createNewColumnText(getTimeString(tour[4], tour[5], tourKind), tourKind);
 		
-		//create the from column
-		TextView toText = new TextView(this);
-		toText.setLayoutParams(new LayoutParams(0, LayoutParams.FILL_PARENT, 1));
-		if(tourKind==TourKind.AVAILABLE) {
-			toText.setTextColor(Color.BLACK);
-		} else {
-			toText.setTextColor(Color.WHITE);
-		}
-		toText.setText(tour[3]);
-		newRow.addView(toText);
-		
-		//crate the time column	
-		TextView timeText = new TextView(this);
-		timeText.setLayoutParams(new LayoutParams(0, LayoutParams.FILL_PARENT, 1));
-		if(tourKind==TourKind.AVAILABLE) {
-			timeText.setTextColor(Color.BLACK);
-		} else {
-			timeText.setTextColor(Color.WHITE);
-		}
-		timeText.setText(getTimeString(tour[4], tour[5], tourKind));
-		newRow.addView(timeText);
+		newRow.addView(tvFrom);
+		newRow.addView(tvTo);
+		newRow.addView(tvTime);
 			
 		//add newRow to the tablelayout
 		tblTours.addView(newRow, new TableLayout.LayoutParams(
@@ -254,6 +209,41 @@ public class TourActivity extends Activity {
 		}
 	}
 	
+	private TableRow createNewRowLayout(TourKind tourKind) {
+		TableRow newRow = new TableRow(this);
+		newRow.setLayoutParams(new LayoutParams(
+				LayoutParams.FILL_PARENT, 
+				LayoutParams.WRAP_CONTENT));
+		
+		//set the rows background color
+		switch (tourKind) {
+		case ACTIVE:
+			newRow.setBackgroundResource(R.drawable.active_row_shape);
+			break;
+		case TEMPLATE:
+			newRow.setBackgroundResource(R.drawable.template_row_shape);
+			break;
+		case AVAILABLE:
+			newRow.setBackgroundResource(R.drawable.available_row_shape);
+			break;
+		default:
+			break;
+		}
+		return newRow;
+	}
+
+	private TextView createNewColumnText(String columnText, TourKind tourKind) {
+		TextView tvColumn = new TextView(this);
+		tvColumn.setLayoutParams(new LayoutParams(0, LayoutParams.FILL_PARENT, 1));
+		if(tourKind==TourKind.AVAILABLE) {
+			tvColumn.setTextColor(Color.BLACK);
+		} else {
+			tvColumn.setTextColor(Color.WHITE);
+		}
+		tvColumn.setText(columnText);
+		return tvColumn;
+	}
+
 	private String getTimeString(String depTimeString, String arrTimeString, TourKind tourKind) {
 		long depTimeInMillis = Long.parseLong(depTimeString);
 		long arrTimeInMillis = Long.parseLong(arrTimeString);
