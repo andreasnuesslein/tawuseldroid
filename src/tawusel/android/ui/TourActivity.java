@@ -6,6 +6,7 @@ import java.util.Date;
 import java.util.Vector;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import tawusel.andorid.R;
@@ -14,7 +15,6 @@ import tawusel.android.enums.TourKind;
 import tawusel.android.tools.communication.JSONCommunicator;
 import tawusel.android.tools.config.PropertyManager;
 import tawusel.android.ui.helper.Error;
-import android.R.bool;
 import android.app.Activity;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -70,122 +70,205 @@ public class TourActivity extends Activity {
 	}
 
 	private void createTourRows() {
-		Vector<String[]> activeTours = getTours("getActiveToursByApp/", false);
-		for (String[] tourData : activeTours) {
-			addTourRow(tourData, TourKind.ACTIVE);
-		}
+		updateTourData();
 		
-		Vector<String[]> templateTours = getTours("getTourTemplatesByApp/", true);
-		for (String[] tourData : templateTours) {
-			addTourRow(tourData, TourKind.TEMPLATE);
-		}
+		db.openDatabase();
+		Vector<String[]> tours = db.getAllTours();
+		db.closeDatabase();
 		
-		Vector<String[]> availableTours = getTours("getAvailableToursByApp/", false);
-		for (String[] tourData : availableTours) {
-			addTourRow(tourData, TourKind.AVAILABLE);
+		for (String[] tour : tours) {
+			addTourRow(tour);
 		}
 	}
 	
-	private Vector<String[]> getTours(String methodName, boolean isTemplateTour) {
-		Vector<String[]> result = new Vector<String[]>();
+	private void updateTourData() {
+		try {
+			getToursFromWebservice("getActiveToursByApp/", false);
+			getToursFromWebservice("getTourTemplatesByApp/", true);
+			getToursFromWebservice("getAvailableToursByApp/", false);
+		} catch (Exception e) {
+			e.printStackTrace();
+			Error.createDialog(this, "Error while updating Tour data", e + " " + e.getMessage());
+			db.closeDatabase();
+		}
+	}
+	
+	private void getToursFromWebservice(String methodName, boolean isTemplateTour) throws Exception {
+		
 		Vector<String> userEntry = getLoggedInUser();
 		String encodedEMail = URLEncoder.encode(userEntry.get(0));
-		try {
-			JSONArray jsonTours = JSONCommunicator.getJSONArray(methodName, encodedEMail, PropertyManager.getJSONServer());
+		JSONArray jsonTours = JSONCommunicator.getJSONArray(methodName, encodedEMail, PropertyManager.getJSONServer());
 
-			for (int i = 0; i < jsonTours.length(); i++) {
-				JSONObject tour = jsonTours.getJSONObject(i);
-				JSONArray tourNameArray = tour.names();
-				JSONArray tourValArray = tour.toJSONArray(tourNameArray);
-				
-				String[] tableRow = new String[3];
-				Date depTime = null;
-				Date arrTime = null;
-				int fromArrayPosition = 3;
-				int toArrayPosition = 4;
-				int depTimeArrayPositon = 5;
-				int arrTimeArrayPosition = 6;
-				
-				if(isTemplateTour) {
-					fromArrayPosition = 2;
-					toArrayPosition = 3;
-					depTimeArrayPositon = 4;
-					arrTimeArrayPosition = 5;
+		for (int i = 0; i < jsonTours.length(); i++) {
+			JSONObject tour = jsonTours.getJSONObject(i);
+			JSONArray tourNameArray = tour.names();
+			JSONArray tourValArray = tour.toJSONArray(tourNameArray);
+			
+			//need to sort the json arrays because they are not build in the way they are sended
+			Vector<JSONArray> arrays = new Vector<JSONArray>();
+			arrays.add(tourNameArray);
+			arrays.add(tourValArray);
+			arrays = sortJSONArrays(arrays);
+			tourValArray = arrays.get(1);
+			
+			String[] tourData = new String[8];
+			if(!isTemplateTour) {
+				for (int j = 1; j < tourValArray.length(); j++) {
+					tourData[j-1] = tourValArray.get(j).toString();;
+				}	
+			} else {
+				for (int j = 0; j < tourValArray.length(); j++) {
+					tourData[j] = tourValArray.get(j).toString();;
 				}
-				
-				for(int j = 0; j < tourNameArray.length(); j++) {
-					String name = tourNameArray.get(j).toString();
-					if(name.equals("_"+fromArrayPosition)) {
-						tableRow[0] = tourValArray.get(j).toString();
-					} else if(name.equals("_"+toArrayPosition)) {
-						tableRow[1] = tourValArray.get(j).toString();
-					} else if(name.equals("_"+depTimeArrayPositon)) {
-						depTime = new Date(tourValArray.getLong(j));
-					} else if(name.equals("_"+arrTimeArrayPosition)) {
-						arrTime = new Date(tourValArray.getLong(j));
-					}
-				}
-				 tableRow[2] = getTimeString(depTime, arrTime, isTemplateTour);
-				 result.add(tableRow);
-				
+				tourData[5] = "";
+				tourData[6] = "";
+				tourData[7] = "";
 			}
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			
+			db.openDatabase();
+			if(!isTemplateTour) {
+				if(methodName.contains("Active")) {
+					db.insertTour(tourData, TourKind.ACTIVE);
+				} else {
+					db.insertTour(tourData, TourKind.AVAILABLE);
+				}
+			} else {
+				db.insertTour(tourData, TourKind.TEMPLATE);
+			}
 		}
-		return result;
+		db.closeDatabase();
 	}
 	
-	private String getTimeString(Date depTime, Date arrTime, boolean isTemplateTour) {
-		if(depTime!=null && arrTime!=null) {
-			SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
-			SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy");
-			String timeString = timeFormat.format(depTime) + " - " + timeFormat.format(arrTime);
-			if(!isTemplateTour) {
-				timeString += " (" + dateFormat.format(depTime) + ")";
-			}
-			return timeString;
-		} else return "";
+	private Vector<JSONArray> sortJSONArrays(Vector<JSONArray> arrays) throws JSONException {
+		JSONArray tmpNameArray = arrays.get(0);
+		JSONArray tmpValArray = arrays.get(1);
+		JSONArray sortedNameArray= new JSONArray(); 
+		JSONArray sortedValArray = new JSONArray(); 
 		
+		for (int i = 0; i < tmpNameArray.length(); i++) {
+			if(tmpNameArray.get(i).equals("_1")) {
+				sortedNameArray.put(0, tmpNameArray.get(i)) ;
+				sortedValArray.put(0, tmpValArray.get(i));
+			} else if(tmpNameArray.get(i).equals("_2")) {
+				sortedNameArray.put(1, tmpNameArray.get(i)) ;
+				sortedValArray.put(1, tmpValArray.get(i));
+			} else if(tmpNameArray.get(i).equals("_3")) {
+				sortedNameArray.put(2, tmpNameArray.get(i)) ;
+				sortedValArray.put(2, tmpValArray.get(i));
+			} else if(tmpNameArray.get(i).equals("_4")) {
+				sortedNameArray.put(3, tmpNameArray.get(i)) ;
+				sortedValArray.put(3, tmpValArray.get(i));				
+			} else if(tmpNameArray.get(i).equals("_5")) {
+				sortedNameArray.put(4, tmpNameArray.get(i)) ;
+				sortedValArray.put(4, tmpValArray.get(i));
+			} else if(tmpNameArray.get(i).equals("_6")) {
+				sortedNameArray.put(5, tmpNameArray.get(i)) ;
+				sortedValArray.put(5, tmpValArray.get(i));
+			} else if(tmpNameArray.get(i).equals("_7")) {
+				sortedNameArray.put(6, tmpNameArray.get(i)) ;
+				sortedValArray.put(6, tmpValArray.get(i));
+			} else if(tmpNameArray.get(i).equals("_8")) {
+				sortedNameArray.put(7, tmpNameArray.get(i)) ;
+				sortedValArray.put(7, tmpValArray.get(i));
+			} else if(tmpNameArray.get(i).equals("_9")) {
+				sortedNameArray.put(8, tmpNameArray.get(i)) ;
+				sortedValArray.put(8, tmpValArray.get(i));
+			}
+		}
+	
+		arrays.clear();
+		arrays.add(sortedNameArray);
+		arrays.add(sortedValArray);
+		return arrays;
 	}
 
-	private void addTourRow(String[] tourData, TourKind tourKind) {
+	private void addTourRow(String[] tour) {
 		TableRow newRow = new TableRow(this);
 		newRow.setLayoutParams(new LayoutParams(
 				LayoutParams.FILL_PARENT, 
 				LayoutParams.WRAP_CONTENT));
 		
-		for (int i = 0; i < tourData.length; i++) {
-			TextView columnText = new TextView(this);
-			columnText.setLayoutParams(new LayoutParams(0, LayoutParams.FILL_PARENT, 1));
-			if(tourKind==TourKind.AVAILABLE) {
-				columnText.setTextColor(Color.BLACK);
-			} else {
-				columnText.setTextColor(Color.WHITE);
-			}
-			
-			columnText.setText(tourData[i]);
-			switch (tourKind) {
-			case ACTIVE:
-				newRow.setBackgroundResource(R.drawable.active_row_shape);
-				break;
-			case TEMPLATE:
-				newRow.setBackgroundResource(R.drawable.template_row_shape);
-				break;
-			case AVAILABLE:
-				newRow.setBackgroundResource(R.drawable.available_row_shape);
-				break;
-			default:
-				break;
-			}
-			
-			newRow.addView(columnText);
+		
+		//set the background color of the row
+		TourKind tourKind = parseTourKind(tour[9]);
+		switch (tourKind) {
+		case ACTIVE:
+			newRow.setBackgroundResource(R.drawable.active_row_shape);
+			break;
+		case TEMPLATE:
+			newRow.setBackgroundResource(R.drawable.template_row_shape);
+			break;
+		case AVAILABLE:
+			newRow.setBackgroundResource(R.drawable.available_row_shape);
+			break;
+		default:
+			break;
 		}
 		
+		//create the from column
+		TextView fromText = new TextView(this);
+		fromText.setLayoutParams(new LayoutParams(0, LayoutParams.FILL_PARENT, 1));
+		if(tourKind==TourKind.AVAILABLE) {
+			fromText.setTextColor(Color.BLACK);
+		} else {
+			fromText.setTextColor(Color.WHITE);
+		}
+		fromText.setText(tour[2]);
+		newRow.addView(fromText);
+		
+		//create the from column
+		TextView toText = new TextView(this);
+		toText.setLayoutParams(new LayoutParams(0, LayoutParams.FILL_PARENT, 1));
+		if(tourKind==TourKind.AVAILABLE) {
+			toText.setTextColor(Color.BLACK);
+		} else {
+			toText.setTextColor(Color.WHITE);
+		}
+		toText.setText(tour[3]);
+		newRow.addView(toText);
+		
+		//crate the time column	
+		TextView timeText = new TextView(this);
+		timeText.setLayoutParams(new LayoutParams(0, LayoutParams.FILL_PARENT, 1));
+		if(tourKind==TourKind.AVAILABLE) {
+			timeText.setTextColor(Color.BLACK);
+		} else {
+			timeText.setTextColor(Color.WHITE);
+		}
+		timeText.setText(getTimeString(tour[4], tour[5], tourKind));
+		newRow.addView(timeText);
+			
 		//add newRow to the tablelayout
 		tblTours.addView(newRow, new TableLayout.LayoutParams(
                 LayoutParams.FILL_PARENT,
                 LayoutParams.FILL_PARENT));
+	}
+	
+	private TourKind parseTourKind(String kindString) {
+		if(kindString.equals("ACTIVE")) {
+			return TourKind.ACTIVE;
+		} else if(kindString.equals("TEMPLATE")) {
+			return TourKind.TEMPLATE;
+		} else {
+			return TourKind.AVAILABLE;
+		}
+	}
+	
+	private String getTimeString(String depTimeString, String arrTimeString, TourKind tourKind) {
+		long depTimeInMillis = Long.parseLong(depTimeString);
+		long arrTimeInMillis = Long.parseLong(arrTimeString);
+		Date depTime = new Date(depTimeInMillis);
+		Date arrTime = new Date(arrTimeInMillis);
+		
+		if(depTime!=null && arrTime!=null) {
+			SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
+			SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy");
+			String timeString = timeFormat.format(depTime) + " - " + timeFormat.format(arrTime);
+			if(!tourKind.equals(TourKind.TEMPLATE)) {
+				timeString += " (" + dateFormat.format(depTime) + ")";
+			}
+			return timeString;
+		} else return "";
 	}
 	
 	private Vector<String> getLoggedInUser() {
@@ -213,7 +296,7 @@ public class TourActivity extends Activity {
 		Vector<String> loggedInUserData = db.getLoggedInUser();
 		int stayLoggedIn = Integer.parseInt(loggedInUserData.get(2));
 		if(stayLoggedIn!=1) {
-			db.clearTable();
+			db.clearUserTable();
 		}
 		this.finish();
 	}

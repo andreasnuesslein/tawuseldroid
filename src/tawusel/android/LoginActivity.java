@@ -97,7 +97,7 @@ public class LoginActivity extends Activity implements OnClickListener {
     	//save the setting in the db
 		try {
 			db.openDatabase();
-			db.clearTable();
+			db.clearUserTable();
     	
 			if(cbKeepMeLoggedIn != null && cbKeepMeLoggedIn.isChecked()) {
 				db.setUserLoggedIn(email, hashedPassword, 1);

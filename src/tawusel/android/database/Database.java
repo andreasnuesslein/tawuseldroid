@@ -2,6 +2,7 @@ package tawusel.android.database;
 
 import java.util.Vector;
 
+import tawusel.android.enums.TourKind;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
@@ -11,12 +12,24 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class Database {
 	
 	public static final String KEY_ID = "_id"; 
+	
 	public static final String KEY_EMAIL = "email";
 	public static final String KEY_PASSWORD = "password";
 	public static final String KEY_STAY_LOGGED_IN = "stay_logged_in";
+	
+	public static final String KEY_CITY = "city";
+	public static final String KEY_DEPATURE_LOCATION = "dep_location";
+	public static final String KEY_ARRIVAL_LOCATION = "arr_location";
+	public static final String KEY_DEPATURE_TIME = "depature";
+	public static final String KEY_ARRIVAL_TIME = "arrival";
+	public static final String KEY_STATE = "state";
+	public static final String KEY_MEMBERS = "members";
+	public static final String KEY_MOD = "mod";
+	public static final String KEY_KIND = "kind";
 
 	private static final String DATABASE_NAME = "TawuselHandyDB";
-	private static final String TABLE_NAME = "loggedInUser";
+	private static final String USER_TABLE_NAME = "loggedInUser";
+	private static final String TOUR_TABLE_NAME = "tour";
 	private static final int DATABASE_VERSION = 1;
 	
 	private DBHelper dbHelper;
@@ -42,12 +55,12 @@ public class Database {
 		cv.put(KEY_EMAIL, email);
 		cv.put(KEY_PASSWORD, password);
 		cv.put(KEY_STAY_LOGGED_IN, stayLoggedIn);
-		database.insert(TABLE_NAME, null, cv);
+		database.insert(USER_TABLE_NAME, null, cv);
 	}
 	
 	public Vector<String> getLoggedInUser() {
 		String[] columns = new String[] {KEY_ID, KEY_EMAIL,KEY_PASSWORD,KEY_STAY_LOGGED_IN};
-		Cursor c = database.query(TABLE_NAME, columns, null, null, null, null, null);
+		Cursor c = database.query(USER_TABLE_NAME, columns, null, null, null, null, null);
 		Vector<String> result = new Vector<String>();
 
 		int iMail = c.getColumnIndex(KEY_EMAIL);
@@ -63,8 +76,76 @@ public class Database {
 		return result;
 	}
 	
-	public void clearTable(){
-		database.delete(TABLE_NAME, KEY_ID + "> 0", null);
+	public void insertTour(String[] tourData, TourKind kind) {
+		ContentValues cv = new ContentValues();
+		String test = kind.toString();
+		cv.put(KEY_CITY, tourData[0]);
+		cv.put(KEY_DEPATURE_LOCATION, tourData[1]);
+		cv.put(KEY_ARRIVAL_LOCATION, tourData[2]);
+		cv.put(KEY_DEPATURE_TIME, tourData[3]);
+		cv.put(KEY_ARRIVAL_TIME, tourData[4]);
+		cv.put(KEY_STATE, tourData[5]);
+		cv.put(KEY_MEMBERS, tourData[6]);
+		cv.put(KEY_MOD, tourData[7]);
+		cv.put(KEY_KIND, kind.toString());
+		database.insert(TOUR_TABLE_NAME, null, cv);
+	}
+	
+	public Vector<String[]> getAllTours() {
+		Vector<String[]> tours = new Vector<String[]>();
+		String[] columns = new String[] {KEY_ID, KEY_CITY, KEY_DEPATURE_LOCATION, KEY_ARRIVAL_LOCATION,
+				KEY_DEPATURE_TIME, KEY_ARRIVAL_TIME, KEY_STATE, KEY_MEMBERS, KEY_MOD, KEY_KIND};
+		Cursor c = database.query(TOUR_TABLE_NAME, columns, null, null, null, null, null);
+		
+		for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
+			String[] values = new String[10];
+			for (int i = 0; i < c.getColumnCount(); i++) {
+				values[i] = c.getString(i);
+			}
+			tours.add(values);
+		}
+		c.close();
+		
+		return tours;
+	}
+	
+	public Vector<String> getTour(int id) {
+		String[] columns = new String[] {KEY_ID, KEY_CITY, KEY_DEPATURE_LOCATION, KEY_ARRIVAL_LOCATION,
+				KEY_DEPATURE_TIME, KEY_ARRIVAL_TIME, KEY_STATE, KEY_MEMBERS, KEY_MOD, KEY_KIND};
+		Cursor c = database.query(TOUR_TABLE_NAME, columns, KEY_ID + " = " + id, null, null, null, null);
+		Vector<String> result = new Vector<String>();
+
+		int iCity = c.getColumnIndex(KEY_CITY);		
+		int iDepatureLocation = c.getColumnIndex(KEY_DEPATURE_LOCATION);
+		int iArrivalLocation = c.getColumnIndex(KEY_ARRIVAL_LOCATION);
+		int iDepatureTime = c.getColumnIndex(KEY_DEPATURE_TIME);
+		int iArrivalTime = c.getColumnIndex(KEY_ARRIVAL_TIME);
+		int iState = c.getColumnIndex(KEY_STATE);
+		int iMembers = c.getColumnIndex(KEY_MEMBERS);
+		int iMod = c.getColumnIndex(KEY_MOD);
+		int iKind = c.getColumnIndex(KEY_KIND);
+		
+		for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
+			result.add(c.getString(iCity));
+			result.add(c.getString(iDepatureLocation));
+			result.add(c.getString(iArrivalLocation));
+			result.add(c.getString(iDepatureTime));
+			result.add(c.getString(iArrivalTime));
+			result.add(c.getString(iState));
+			result.add(c.getString(iMembers));
+			result.add(c.getString(iMod));
+			result.add(c.getString(iKind));
+		}
+		c.close();
+		return result;
+	}
+	
+	public void clearUserTable(){
+		database.delete(USER_TABLE_NAME, KEY_ID + "> 0", null);
+	}
+	
+	public void clearTourTable(){
+		database.delete(TOUR_TABLE_NAME, KEY_ID + "> 0", null);
 	}
 	
 	public void resetDatabase() {
@@ -79,17 +160,31 @@ public class Database {
 
 		@Override
 		public void onCreate(SQLiteDatabase db) {
-			db.execSQL("CREATE TABLE " + TABLE_NAME + " (" +
+			db.execSQL("CREATE TABLE " + USER_TABLE_NAME + " (" +
 					KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
 					KEY_EMAIL + " TEXT NOT NULL, " +
 					KEY_PASSWORD + " TEXT NOT NULL, " +
 					KEY_STAY_LOGGED_IN + " INT NOT NULL);"
 					);
+			db.execSQL("CREATE TABLE " + TOUR_TABLE_NAME + " (" +
+					KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+					KEY_CITY + " TEXT NOT NULL, " +
+					KEY_DEPATURE_LOCATION + " TEXT NOT NULL, " +
+					KEY_ARRIVAL_LOCATION + " TEXT NOT NULL, " +
+					KEY_DEPATURE_TIME + " TEXT NOT NULL, " + 
+					KEY_ARRIVAL_TIME + " TEXT NOT NULL, " + 
+					KEY_STATE + " TEXT NOT NULL, " +
+					KEY_MEMBERS + " TEXT, " + 
+					KEY_MOD + " TEXT, " +
+					KEY_KIND + " TEXT NOT NULL" + ");"
+					);
+			
 		}
 
 		@Override
 		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-			db.execSQL("DROP TABLE IF EXISTS " + TABLE_NAME + ";");
+			db.execSQL("DROP TABLE IF EXISTS " + USER_TABLE_NAME + ";");
+			db.execSQL("DROP TABLE IF EXISTS " + TOUR_TABLE_NAME + ";");
 			onCreate(db);
 		}
 		
