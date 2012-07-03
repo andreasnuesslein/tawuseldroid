@@ -21,4 +21,11 @@
     <string name="menu_newTour">Add tour</string>
     <string name="menu_logout">Log out</string>
     <string name="menu_help">Help</string>
+    <string name="tourDetailsDialog_head">Tour details</string>
+    <string name="tourDetailsDialog_city">City:</string>
+    <string name="tourDetailsDialog_from">From:</string>
+    <string name="tourDetailsDialog_to">To:</string>
+    <string name="tourDetailsDialog_time">Time:</string>
+    <string name="tourDetailsDialog_passengers">Passengers:</string>
+    <string name="tourDetailsDialog_joinbutton">join</string>
 </resources>

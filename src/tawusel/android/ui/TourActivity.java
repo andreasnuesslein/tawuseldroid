@@ -1,8 +1,6 @@
 package tawusel.android.ui;
 
 import java.net.URLEncoder;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Vector;
 
 import org.json.JSONArray;
@@ -15,12 +13,17 @@ import tawusel.android.enums.TourKind;
 import tawusel.android.tools.communication.JSONCommunicator;
 import tawusel.android.tools.config.PropertyManager;
 import tawusel.android.ui.helper.Error;
+import tawusel.android.ui.helper.Time;
 import android.app.Activity;
+import android.app.Dialog;
+import android.content.Context;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.View.OnClickListener;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TableRow.LayoutParams;
@@ -28,9 +31,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 public class TourActivity extends Activity {
-	 Database db = new Database(TourActivity.this);
-	 private TableLayout tblTours;
+	final Context context = this; 
+	Database db = new Database(TourActivity.this);
 	 
+	 private TableLayout tblTours;
 	 
 	/** Called when the activity is first created. */
     @Override
@@ -134,8 +138,8 @@ public class TourActivity extends Activity {
 			} else {
 				db.insertTour(tourData, TourKind.TEMPLATE);
 			}
+			db.closeDatabase();
 		}
-		db.closeDatabase();
 	}
 	
 	private Vector<JSONArray> sortJSONArrays(Vector<JSONArray> arrays) throws JSONException {
@@ -181,32 +185,28 @@ public class TourActivity extends Activity {
 		return arrays;
 	}
 
-	private void addTourRow(String[] tour) {
-		TourKind tourKind = parseTourKind(tour[9]);
+	private void addTourRow(String[] tourFromDb) {
+		String[] tour = tourFromDb;
+		TourKind tourKind = TourKind.parseTourKind(tour[9]);
 		
 		TableRow newRow = createNewRowLayout(tourKind);
+		//set the tag - so we can figure out the id of the tour in its onclicklistener later
+		newRow.setTag(tour[0]);
 		TextView tvFrom = createNewColumnText(tour[2], tourKind);
 		TextView tvTo = createNewColumnText(tour[3], tourKind);
-		TextView tvTime = createNewColumnText(getTimeString(tour[4], tour[5], tourKind), tourKind);
+		String timeString = Time.formatString(tour[4], tour[5], tourKind);
+		TextView tvTime = createNewColumnText(timeString, tourKind);
 		
 		newRow.addView(tvFrom);
 		newRow.addView(tvTo);
 		newRow.addView(tvTime);
-			
+		
+		newRow = appendOnClickListener(newRow);
+		
 		//add newRow to the tablelayout
 		tblTours.addView(newRow, new TableLayout.LayoutParams(
                 LayoutParams.FILL_PARENT,
                 LayoutParams.FILL_PARENT));
-	}
-	
-	private TourKind parseTourKind(String kindString) {
-		if(kindString.equals("ACTIVE")) {
-			return TourKind.ACTIVE;
-		} else if(kindString.equals("TEMPLATE")) {
-			return TourKind.TEMPLATE;
-		} else {
-			return TourKind.AVAILABLE;
-		}
 	}
 	
 	private TableRow createNewRowLayout(TourKind tourKind) {
@@ -244,21 +244,37 @@ public class TourActivity extends Activity {
 		return tvColumn;
 	}
 
-	private String getTimeString(String depTimeString, String arrTimeString, TourKind tourKind) {
-		long depTimeInMillis = Long.parseLong(depTimeString);
-		long arrTimeInMillis = Long.parseLong(arrTimeString);
-		Date depTime = new Date(depTimeInMillis);
-		Date arrTime = new Date(arrTimeInMillis);
-		
-		if(depTime!=null && arrTime!=null) {
-			SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
-			SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy");
-			String timeString = timeFormat.format(depTime) + " - " + timeFormat.format(arrTime);
-			if(!tourKind.equals(TourKind.TEMPLATE)) {
-				timeString += " (" + dateFormat.format(depTime) + ")";
-			}
-			return timeString;
-		} else return "";
+	private TableRow appendOnClickListener(TableRow newRow) {
+		newRow.setOnClickListener(new OnClickListener() {
+		       public void onClick(View v) {
+		    	   int tourId = Integer.parseInt(v.getTag().toString());
+		    	   db.openDatabase();
+		    	   String[] tour = db.getTour(tourId);
+		    	   db.closeDatabase();
+		    	   
+		    	   Dialog tourDetailsDialog = new Dialog(context);
+		    	   tourDetailsDialog.setContentView(R.layout.tour_details_dialog);
+		    	   tourDetailsDialog.setTitle(R.string.tourDetailsDialog_head);
+		    	  
+		    	   //get the elements 
+		    	   TextView tvCity = (TextView) tourDetailsDialog.findViewById(R.id.tourDetailsDialog_tvCity);
+		    	   TextView tvFrom = (TextView) tourDetailsDialog.findViewById(R.id.tourDetailsDialog_tvFrom);
+		    	   TextView tvTo = (TextView) tourDetailsDialog.findViewById(R.id.tourDetailsDialog_tvTo);
+		    	   TextView tvTime = (TextView) tourDetailsDialog.findViewById(R.id.tourDetailsDialog_tvTime);
+		    	   TextView tvPassengers = (TextView) tourDetailsDialog.findViewById(R.id.tourDetailsDialog_tvPassengers);
+		    	  
+		    	   //set the tv values for the current tour
+		    	   tvCity.setText(tour[1]);
+		    	   tvFrom.setText(tour[2]);
+		    	   tvTo.setText(tour[3]); 
+		    	   TourKind tourKind = TourKind.parseTourKind(tour[9]);
+		    	   tvTime.setText(Time.formatString(tour[4], tour[5], tourKind));
+		    	   tvPassengers.setText("test");
+		    	   
+		    	   tourDetailsDialog.show();
+		       }   
+		});
+		return newRow;
 	}
 	
 	private Vector<String> getLoggedInUser() {
@@ -288,7 +304,16 @@ public class TourActivity extends Activity {
 		if(stayLoggedIn!=1) {
 			db.clearUserTable();
 		}
+		db.closeDatabase();
 		this.finish();
+	}
+	
+	@Override
+	protected void onDestroy() {
+		db.openDatabase();
+		db.clearTourTable();
+		db.closeDatabase();
+		super.onDestroy();
 	}
 	
 }

@@ -14,4 +14,14 @@ public enum TourKind {
 	 public int getTourKind() {
 	   return tourKind;
 	 }
+	 
+	 public static TourKind parseTourKind(String kindString) {
+			if(kindString.equals("ACTIVE")) {
+				return TourKind.ACTIVE;
+			} else if(kindString.equals("TEMPLATE")) {
+				return TourKind.TEMPLATE;
+			} else {
+				return TourKind.AVAILABLE;
+			}
+	}
 }

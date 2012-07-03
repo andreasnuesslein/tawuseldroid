@@ -78,7 +78,6 @@ public class Database {
 	
 	public void insertTour(String[] tourData, TourKind kind) {
 		ContentValues cv = new ContentValues();
-		String test = kind.toString();
 		cv.put(KEY_CITY, tourData[0]);
 		cv.put(KEY_DEPATURE_LOCATION, tourData[1]);
 		cv.put(KEY_ARRIVAL_LOCATION, tourData[2]);
@@ -109,11 +108,11 @@ public class Database {
 		return tours;
 	}
 	
-	public Vector<String> getTour(int id) {
+	public String[] getTour(int id) {
 		String[] columns = new String[] {KEY_ID, KEY_CITY, KEY_DEPATURE_LOCATION, KEY_ARRIVAL_LOCATION,
 				KEY_DEPATURE_TIME, KEY_ARRIVAL_TIME, KEY_STATE, KEY_MEMBERS, KEY_MOD, KEY_KIND};
 		Cursor c = database.query(TOUR_TABLE_NAME, columns, KEY_ID + " = " + id, null, null, null, null);
-		Vector<String> result = new Vector<String>();
+		String[] result = new String[10];
 
 		int iCity = c.getColumnIndex(KEY_CITY);		
 		int iDepatureLocation = c.getColumnIndex(KEY_DEPATURE_LOCATION);
@@ -125,16 +124,18 @@ public class Database {
 		int iMod = c.getColumnIndex(KEY_MOD);
 		int iKind = c.getColumnIndex(KEY_KIND);
 		
-		for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
-			result.add(c.getString(iCity));
-			result.add(c.getString(iDepatureLocation));
-			result.add(c.getString(iArrivalLocation));
-			result.add(c.getString(iDepatureTime));
-			result.add(c.getString(iArrivalTime));
-			result.add(c.getString(iState));
-			result.add(c.getString(iMembers));
-			result.add(c.getString(iMod));
-			result.add(c.getString(iKind));
+		if(c.getCount() == 1) {
+			c.moveToLast();
+			result[0] = Integer.toString(id);
+			result[1] = c.getString(iCity);
+			result[2] = c.getString(iDepatureLocation);
+			result[3] = c.getString(iArrivalLocation);
+			result[4] = c.getString(iDepatureTime);
+			result[5] = c.getString(iArrivalTime);
+			result[6] = c.getString(iState);
+			result[7] = c.getString(iMembers);
+			result[8] = c.getString(iMod);
+			result[9] = c.getString(iKind);
 		}
 		c.close();
 		return result;
@@ -146,6 +147,8 @@ public class Database {
 	
 	public void clearTourTable(){
 		database.delete(TOUR_TABLE_NAME, KEY_ID + "> 0", null);
+		//dirty version - set autoincrement = 0
+//		database.execSQL("delete from sqlite_sequence where name='" + TOUR_TABLE_NAME + "';");
 	}
 	
 	public void resetDatabase() {
