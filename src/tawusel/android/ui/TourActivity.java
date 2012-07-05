@@ -4,7 +4,6 @@ import java.net.URLEncoder;
 import java.util.Vector;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import tawusel.andorid.R;
@@ -12,10 +11,9 @@ import tawusel.android.database.Database;
 import tawusel.android.enums.TourKind;
 import tawusel.android.tools.communication.JSONCommunicator;
 import tawusel.android.tools.config.PropertyManager;
-import tawusel.android.ui.helper.Error;
+import tawusel.android.ui.helper.JSONArrayHelper;
 import tawusel.android.ui.helper.Time;
 import android.app.Activity;
-import android.app.Dialog;
 import android.content.Context;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -91,8 +89,8 @@ public class TourActivity extends Activity {
 			getToursFromWebservice("getTourTemplatesByApp/", true);
 			getToursFromWebservice("getAvailableToursByApp/", false);
 		} catch (Exception e) {
-			e.printStackTrace();
-			Error.createDialog(this, "Error while updating Tour data", e + " " + e.getMessage());
+			ErrorDialog errorDialog = new ErrorDialog(this, "Error while updating Tour data", e + " " + e.getMessage());
+			errorDialog.show();
 			db.closeDatabase();
 		}
 	}
@@ -111,87 +109,46 @@ public class TourActivity extends Activity {
 			Vector<JSONArray> arrays = new Vector<JSONArray>();
 			arrays.add(tourNameArray);
 			arrays.add(tourValArray);
-			arrays = sortJSONArrays(arrays);
+			arrays = JSONArrayHelper.sort(arrays);
 			tourValArray = arrays.get(1);
 			
-			String[] tourData = new String[8];
 			if(!isTemplateTour) {
-				for (int j = 1; j < tourValArray.length(); j++) {
-					tourData[j-1] = tourValArray.get(j).toString();;
-				}	
-			} else {
+				String[] tourData = new String[9];
 				for (int j = 0; j < tourValArray.length(); j++) {
 					tourData[j] = tourValArray.get(j).toString();;
 				}
-				tourData[5] = "";
-				tourData[6] = "";
-				tourData[7] = "";
-			}
-			
-			db.openDatabase();
-			if(!isTemplateTour) {
+				
+				db.openDatabase();
 				if(methodName.contains("Active")) {
 					db.insertTour(tourData, TourKind.ACTIVE);
 				} else {
 					db.insertTour(tourData, TourKind.AVAILABLE);
 				}
+				db.closeDatabase();
 			} else {
-				db.insertTour(tourData, TourKind.TEMPLATE);
+				String[] templateData = new String[5];
+				for (int j = 0; j < tourValArray.length(); j++) {
+					templateData[j] = tourValArray.get(j).toString();;
+				}
+				
+				db.openDatabase();
+				db.insertTemplate(templateData);
+				db.closeDatabase();
 			}
-			db.closeDatabase();
 		}
 	}
 	
-	private Vector<JSONArray> sortJSONArrays(Vector<JSONArray> arrays) throws JSONException {
-		JSONArray tmpNameArray = arrays.get(0);
-		JSONArray tmpValArray = arrays.get(1);
-		JSONArray sortedNameArray= new JSONArray(); 
-		JSONArray sortedValArray = new JSONArray(); 
-		
-		for (int i = 0; i < tmpNameArray.length(); i++) {
-			if(tmpNameArray.get(i).equals("_1")) {
-				sortedNameArray.put(0, tmpNameArray.get(i)) ;
-				sortedValArray.put(0, tmpValArray.get(i));
-			} else if(tmpNameArray.get(i).equals("_2")) {
-				sortedNameArray.put(1, tmpNameArray.get(i)) ;
-				sortedValArray.put(1, tmpValArray.get(i));
-			} else if(tmpNameArray.get(i).equals("_3")) {
-				sortedNameArray.put(2, tmpNameArray.get(i)) ;
-				sortedValArray.put(2, tmpValArray.get(i));
-			} else if(tmpNameArray.get(i).equals("_4")) {
-				sortedNameArray.put(3, tmpNameArray.get(i)) ;
-				sortedValArray.put(3, tmpValArray.get(i));				
-			} else if(tmpNameArray.get(i).equals("_5")) {
-				sortedNameArray.put(4, tmpNameArray.get(i)) ;
-				sortedValArray.put(4, tmpValArray.get(i));
-			} else if(tmpNameArray.get(i).equals("_6")) {
-				sortedNameArray.put(5, tmpNameArray.get(i)) ;
-				sortedValArray.put(5, tmpValArray.get(i));
-			} else if(tmpNameArray.get(i).equals("_7")) {
-				sortedNameArray.put(6, tmpNameArray.get(i)) ;
-				sortedValArray.put(6, tmpValArray.get(i));
-			} else if(tmpNameArray.get(i).equals("_8")) {
-				sortedNameArray.put(7, tmpNameArray.get(i)) ;
-				sortedValArray.put(7, tmpValArray.get(i));
-			} else if(tmpNameArray.get(i).equals("_9")) {
-				sortedNameArray.put(8, tmpNameArray.get(i)) ;
-				sortedValArray.put(8, tmpValArray.get(i));
-			}
-		}
-	
-		arrays.clear();
-		arrays.add(sortedNameArray);
-		arrays.add(sortedValArray);
-		return arrays;
-	}
-
 	private void addTourRow(String[] tourFromDb) {
 		String[] tour = tourFromDb;
 		TourKind tourKind = TourKind.parseTourKind(tour[9]);
 		
 		TableRow newRow = createNewRowLayout(tourKind);
 		//set the tag - so we can figure out the id of the tour in its onclicklistener later
-		newRow.setTag(tour[0]);
+		if(tourKind.equals(TourKind.TEMPLATE)) {
+			newRow.setTag("t" + tour[0]);
+		} else {
+			newRow.setTag(tour[0]);
+		}
 		TextView tvFrom = createNewColumnText(tour[2], tourKind);
 		TextView tvTo = createNewColumnText(tour[3], tourKind);
 		String timeString = Time.formatString(tour[4], tour[5], tourKind);
@@ -247,32 +204,19 @@ public class TourActivity extends Activity {
 	private TableRow appendOnClickListener(TableRow newRow) {
 		newRow.setOnClickListener(new OnClickListener() {
 		       public void onClick(View v) {
-		    	   int tourId = Integer.parseInt(v.getTag().toString());
-		    	   db.openDatabase();
-		    	   String[] tour = db.getTour(tourId);
-		    	   db.closeDatabase();
-		    	   
-		    	   Dialog tourDetailsDialog = new Dialog(context);
-		    	   tourDetailsDialog.setContentView(R.layout.tour_details_dialog);
-		    	   tourDetailsDialog.setTitle(R.string.tourDetailsDialog_head);
-		    	  
-		    	   //get the elements 
-		    	   TextView tvCity = (TextView) tourDetailsDialog.findViewById(R.id.tourDetailsDialog_tvCity);
-		    	   TextView tvFrom = (TextView) tourDetailsDialog.findViewById(R.id.tourDetailsDialog_tvFrom);
-		    	   TextView tvTo = (TextView) tourDetailsDialog.findViewById(R.id.tourDetailsDialog_tvTo);
-		    	   TextView tvTime = (TextView) tourDetailsDialog.findViewById(R.id.tourDetailsDialog_tvTime);
-		    	   TextView tvPassengers = (TextView) tourDetailsDialog.findViewById(R.id.tourDetailsDialog_tvPassengers);
-		    	  
-		    	   //set the tv values for the current tour
-		    	   tvCity.setText(tour[1]);
-		    	   tvFrom.setText(tour[2]);
-		    	   tvTo.setText(tour[3]); 
-		    	   TourKind tourKind = TourKind.parseTourKind(tour[9]);
-		    	   tvTime.setText(Time.formatString(tour[4], tour[5], tourKind));
-		    	   tvPassengers.setText("test");
-		    	   
-		    	   tourDetailsDialog.show();
-		       }   
+		    	   String rowTag = v.getTag().toString();
+		    	   if(!rowTag.startsWith("t")) {
+		    		   int tourId = Integer.parseInt(rowTag);
+			    	   db.openDatabase();
+			    	   String[] tour = db.getTour(tourId);
+			    	   String[] status = db.getState(Integer.parseInt(tour[8]));
+			    	   Vector<String> user = db.getLoggedInUser();
+			    	   db.closeDatabase();
+			    	   
+			    	   TourDetailsDialog tourDetailsDialog = new TourDetailsDialog(context, tour, status, user);
+			    	   tourDetailsDialog.show();
+		    	   }
+		       }
 		});
 		return newRow;
 	}
@@ -283,7 +227,8 @@ public class TourActivity extends Activity {
 			db.openDatabase();
 			userEntry = db.getLoggedInUser();
 		} catch (Exception e) {
-			Error.createDialog(this, e.toString(), e.getMessage());
+			ErrorDialog errorDialog = new ErrorDialog(this, e.toString(), e.getMessage());
+			errorDialog.show();
 		}
 		db.closeDatabase();
 		return userEntry;

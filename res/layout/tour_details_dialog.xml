@@ -81,6 +81,23 @@
         	<TextView android:layout_width="0dip"
               	  android:layout_height="wrap_content"
               	  android:textColor="#FFF"
+              	  android:text="@string/tourDetailsDialog_status"
+              	  android:layout_weight="1" />
+        
+        	<TextView android:id="@+id/tourDetailsDialog_tvStatus"
+            	  android:layout_width="0dip"
+              	  android:layout_height="wrap_content"
+              	  android:textColor="#FFF"
+                  android:layout_weight="1" />
+    
+    	</TableRow>
+    	
+    	<TableRow android:layout_width="fill_parent"
+        	  android:layout_height="wrap_content">
+    
+        	<TextView android:layout_width="0dip"
+              	  android:layout_height="wrap_content"
+              	  android:textColor="#FFF"
               	  android:text="@string/tourDetailsDialog_passengers"
               	  android:layout_weight="1" />
         
@@ -100,12 +117,18 @@
         android:background="#000000"
         android:layout_below="@id/tourDetailsDialog_tlTable" />
     
-    <Button android:id="@+id/tozrDetailsDialog_bJoinButton"
+      <Button android:id="@+id/tourDetailsDialog_bLeaveButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@id/tourDetailsDialog_vFiller"
         android:layout_alignParentRight="true"
-        android:text="@string/tourDetailsDialog_joinbutton" />
+        android:text="@string/tourDetailsDialog_leavebutton" />
     
+   <Button android:id="@+id/tourDetailsDialog_bJoinButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toLeftOf="@id/tourDetailsDialog_bLeaveButton"
+        android:layout_below="@id/tourDetailsDialog_vFiller"
+        android:text="@string/tourDetailsDialog_joinbutton" />
 
 </RelativeLayout>

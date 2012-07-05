@@ -26,6 +26,9 @@
     <string name="tourDetailsDialog_from">From:</string>
     <string name="tourDetailsDialog_to">To:</string>
     <string name="tourDetailsDialog_time">Time:</string>
+    <string name="tourDetailsDialog_status">Status:</string>
     <string name="tourDetailsDialog_passengers">Passengers:</string>
     <string name="tourDetailsDialog_joinbutton">join</string>
+    <string name="tourDetailsDialog_leavebutton">leave</string>
+    <string name="tourDetailsDialog_createbutton">create</string>
 </resources>

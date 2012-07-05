@@ -3,14 +3,16 @@ package tawusel.android;
 import java.net.URLEncoder;
 import java.util.Vector;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import tawusel.andorid.R;
 import tawusel.android.database.Database;
 import tawusel.android.tools.communication.JSONCommunicator;
 import tawusel.android.tools.config.PropertyManager;
+import tawusel.android.ui.ErrorDialog;
 import tawusel.android.ui.TourActivity;
-import tawusel.android.ui.helper.Error;
+import tawusel.android.ui.helper.JSONArrayHelper;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
@@ -45,6 +47,7 @@ public class LoginActivity extends Activity implements OnClickListener {
     	try {
 			db.openDatabase();
 			db.resetDatabase();
+			updateStatusFromWebservice();
 			Vector<String> loggedInUserData = db.getLoggedInUser();
 			if(!loggedInUserData.isEmpty()) {
 				String email = loggedInUserData.get(0);
@@ -52,11 +55,39 @@ public class LoginActivity extends Activity implements OnClickListener {
 				tryToLogin(email, hashedPassword);
 			}
 		} catch (Exception e) {
-			Error.createDialog(this, e.toString(), e.getMessage());
+			ErrorDialog errorDialog = new ErrorDialog(this, e.toString(), e.getMessage());
+			errorDialog.show();
 		} finally {
 			db.closeDatabase();
 		}
 		
+	}
+
+	private void updateStatusFromWebservice() {
+		try {
+			JSONArray jsonStates = JSONCommunicator.getJSONArray("getTourStatusValuesByApp", "", PropertyManager.getJSONServer());
+			for (int i = 0; i < jsonStates.length(); i++) {
+				JSONObject state = jsonStates.getJSONObject(i);
+				JSONArray stateNameArray = state.names();
+				JSONArray stateValArray = state.toJSONArray(stateNameArray);
+				
+				//need to sort the json arrays because they are not build in the way they are sended
+				Vector<JSONArray> arrays = new Vector<JSONArray>();
+				arrays.add(stateNameArray);
+				arrays.add(stateValArray);
+				arrays = JSONArrayHelper.sort(arrays);
+				stateValArray = arrays.get(1);
+				
+				String[] stateData = new String[3];
+				for (int j = 0; j < stateValArray.length(); j++) {
+					stateData[j] = stateValArray.get(j).toString();;
+				}	
+				db.insertState(stateData);
+			}
+		} catch (Exception e) {
+			ErrorDialog errorDialog = new ErrorDialog(this, e.toString(), e.getMessage());
+			errorDialog.show();
+		}
 	}
 
 	public void initFields(){
@@ -81,15 +112,18 @@ public class LoginActivity extends Activity implements OnClickListener {
 	    		String params = encodedEMail+"/"+hashedPassword;
 				JSONObject jsonUser = JSONCommunicator.getJSONObject("authenticateByApp/", params, PropertyManager.getJSONServer());
 	    		if (jsonUser == null){
-	    			Error.createDialog(this, "Login failed", "Email and/or password doesn't match.");
+	    			ErrorDialog errorDialog = new ErrorDialog(this, "Login failed", "Email and/or password doesn't match.");
+	    			errorDialog.show();
 	    		} else {
 	    			performLogingAction(userEmail, hashedPassword);
 	    		}
 			} catch (Exception e) {
-				Error.createDialog(this, e.toString(), e.getMessage());
+				ErrorDialog errorDialog = new ErrorDialog(this, e.toString(), e.getMessage());
+				errorDialog.show();
 			}
     	} else {
-    		Error.createDialog(this, "Login failed", "Email field was empty");
+    		ErrorDialog errorDialog = new ErrorDialog(this, "Login failed", "Email field was empty");
+			errorDialog.show();
     	}
     }
 
@@ -105,7 +139,8 @@ public class LoginActivity extends Activity implements OnClickListener {
 				db.setUserLoggedIn(email, hashedPassword, 0);
 			}
 		} catch(Exception e) {
-			Error.createDialog(this, e.toString(), e.getMessage());
+			ErrorDialog errorDialog = new ErrorDialog(this, e.toString(), e.getMessage());
+			errorDialog.show();
 		} finally {
 			db.closeDatabase();
 		}

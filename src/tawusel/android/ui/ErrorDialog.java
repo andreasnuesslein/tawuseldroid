@@ -1,4 +1,4 @@
-package tawusel.android.ui.helper;
+package tawusel.android.ui;
 
 import java.util.StringTokenizer;
 
@@ -6,18 +6,17 @@ import android.app.Dialog;
 import android.content.Context;
 import android.widget.TextView;
 
-public class Error {
+public class ErrorDialog extends Dialog {
 
-	public static void createDialog(Context context, String exceptionName, String exceptionMessage) {
-		Dialog dialog = new Dialog(context);
-		dialog.setTitle(getExceptionTitle(exceptionName));
+	public ErrorDialog(Context context, String exceptionName, String exceptionMessage) {
+		super(context);
+		setTitle(getExceptionTitle(exceptionName));
 		TextView tv = new TextView(context);
 		tv.setText(exceptionMessage);
-		dialog.setContentView(tv);
-		dialog.show();
+		setContentView(tv);
 	}
-    
-	private static String getExceptionTitle(String exceptionName) {
+	
+	private String getExceptionTitle(String exceptionName) {
 		//remove path in front of the title
 		StringTokenizer st = new StringTokenizer(exceptionName, ".");
 		String title = "Error";
@@ -31,4 +30,5 @@ public class Error {
 		
 		return title;
 	}
+
 }

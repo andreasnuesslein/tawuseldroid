@@ -18,6 +18,7 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpParams;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.util.Log;
@@ -59,6 +60,11 @@ public class JSONCommunicator {
 			e.printStackTrace();
 			throw e;
 		}
+		return json;
+	}
+	
+	public static JSONArray parseJSArray(String arrayString) throws JSONException {
+		JSONArray json = new JSONArray(arrayString);
 		return json;
 	}
 
