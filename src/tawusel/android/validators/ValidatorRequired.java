@@ -1,7 +1,5 @@
 package tawusel.android.validators;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class ValidatorRequired<T> implements Validator<T> {
 
@@ -15,7 +13,6 @@ public class ValidatorRequired<T> implements Validator<T> {
 
 	}
 
-	@Override
 	public String getErrorMessage() {
 		return "is required";
 	}

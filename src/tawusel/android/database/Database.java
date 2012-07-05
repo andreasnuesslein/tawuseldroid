@@ -81,7 +81,16 @@ public class Database {
 		return result;
 	}
 	
-	public void insertTour(String[] tourData, TourKind kind) {
+	public void checkAndUpdateTour(String[] tourData) {
+		String[] tour = getTour(Integer.parseInt(tourData[0]));
+		if(tour[0] == null) {
+			insertTour(tourData);
+		} else {
+			updateTour(tourData);
+		}
+	}
+	
+	public void insertTour(String[] tourData) {
 		ContentValues cv = new ContentValues();
 		cv.put(KEY_ID, Integer.parseInt(tourData[0]));
 		cv.put(KEY_CITY, tourData[1]);
@@ -92,8 +101,22 @@ public class Database {
 		cv.put(KEY_STATE, tourData[6]);
 		cv.put(KEY_MEMBERS, tourData[7]);
 		cv.put(KEY_MOD, tourData[8]);
-		cv.put(KEY_KIND, kind.toString());
+		cv.put(KEY_KIND, tourData[9]);
 		database.insert(TOUR_TABLE_NAME, null, cv);
+	}
+	
+	public void updateTour(String[] tourData) {
+		ContentValues cv = new ContentValues();
+		cv.put(KEY_CITY, tourData[1]);
+		cv.put(KEY_DEPATURE_LOCATION, tourData[2]);
+		cv.put(KEY_ARRIVAL_LOCATION, tourData[3]);
+		cv.put(KEY_DEPATURE_TIME, tourData[4]);
+		cv.put(KEY_ARRIVAL_TIME, tourData[5]);
+		cv.put(KEY_STATE, tourData[6]);
+		cv.put(KEY_MEMBERS, tourData[7]);
+		cv.put(KEY_MOD, tourData[8]);
+		cv.put(KEY_KIND, tourData[9]);
+		database.update(TOUR_TABLE_NAME, cv, KEY_ID + " = " + tourData[0] , null);
 	}
 	
 	public String[] getTour(int id) {
@@ -252,8 +275,11 @@ public class Database {
 	
 	public void clearTourTable(){
 		database.delete(TOUR_TABLE_NAME, KEY_ID + "> 0", null);
-		//dirty version - set autoincrement = 0
-//		database.execSQL("delete from sqlite_sequence where name='" + TOUR_TABLE_NAME + "';");
+		
+	}
+	
+	public void clearTemplateTable() {
+		database.delete(TEMPLATE_TABLE_NAME, KEY_ID + "> 0", null);
 	}
 	
 	public void clearStateTable() {

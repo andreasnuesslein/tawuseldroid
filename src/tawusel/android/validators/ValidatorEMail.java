@@ -22,7 +22,6 @@ public class ValidatorEMail<String> implements Validator<String> {
 	}
 
 
-	@Override
 	public java.lang.String getErrorMessage() {
 		
 		return "no valid email";

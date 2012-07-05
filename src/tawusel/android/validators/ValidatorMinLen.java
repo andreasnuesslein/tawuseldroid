@@ -1,7 +1,5 @@
 package tawusel.android.validators;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class ValidatorMinLen<T> implements Validator<T> {
 
@@ -17,7 +15,6 @@ public class ValidatorMinLen<T> implements Validator<T> {
 
 	}
 
-	@Override
 	public String getErrorMessage() {
 		return "must have min "+ this.cmpValue +" characters";
 	}

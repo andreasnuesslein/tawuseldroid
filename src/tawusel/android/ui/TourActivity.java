@@ -15,6 +15,7 @@ import tawusel.android.ui.helper.JSONArrayHelper;
 import tawusel.android.ui.helper.Time;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.Menu;
@@ -32,8 +33,11 @@ public class TourActivity extends Activity {
 	final Context context = this; 
 	Database db = new Database(TourActivity.this);
 	 
-	 private TableLayout tblTours;
-	 
+	private TableLayout tblTours;
+	private boolean resumeHasRun = false;
+
+	
+	
 	/** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -46,6 +50,16 @@ public class TourActivity extends Activity {
         createTourRows();
     }
 	
+    @Override
+    public void onResume() {
+    	super.onResume();
+        if (!resumeHasRun) {
+            resumeHasRun = true;
+            return;
+        }
+    	updateTourRows();
+    }
+    
 	@Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
@@ -60,6 +74,12 @@ public class TourActivity extends Activity {
 	        case R.id.menu_newTour:
 	            createNewTour();
 	            return true;
+	        case R.id.menu_update:
+	        	db.openDatabase();
+	        	db.clearTemplateTable();
+	        	db.closeDatabase();
+	        	createTourRows();
+	        	return true;
 	        case R.id.menu_help:
 	            showHelp();
 	            return true;
@@ -72,8 +92,11 @@ public class TourActivity extends Activity {
 	}
 
 	private void createTourRows() {
-		updateTourData();
-		
+		updateTourDataFromWebService();
+		updateTourRows();
+	}
+	
+	private void updateTourRows() {
 		db.openDatabase();
 		Vector<String[]> tours = db.getAllTours();
 		db.closeDatabase();
@@ -83,7 +106,7 @@ public class TourActivity extends Activity {
 		}
 	}
 	
-	private void updateTourData() {
+	private void updateTourDataFromWebService() {
 		try {
 			getToursFromWebservice("getActiveToursByApp/", false);
 			getToursFromWebservice("getTourTemplatesByApp/", true);
@@ -113,16 +136,18 @@ public class TourActivity extends Activity {
 			tourValArray = arrays.get(1);
 			
 			if(!isTemplateTour) {
-				String[] tourData = new String[9];
+				String[] tourData = new String[10];
 				for (int j = 0; j < tourValArray.length(); j++) {
 					tourData[j] = tourValArray.get(j).toString();;
 				}
 				
 				db.openDatabase();
 				if(methodName.contains("Active")) {
-					db.insertTour(tourData, TourKind.ACTIVE);
+					tourData[9] = TourKind.ACTIVE.toString();
+					db.checkAndUpdateTour(tourData);
 				} else {
-					db.insertTour(tourData, TourKind.AVAILABLE);
+					tourData[9] = TourKind.AVAILABLE.toString();
+					db.checkAndUpdateTour(tourData);
 				}
 				db.closeDatabase();
 			} else {
@@ -257,6 +282,7 @@ public class TourActivity extends Activity {
 	protected void onDestroy() {
 		db.openDatabase();
 		db.clearTourTable();
+		db.clearTemplateTable();
 		db.closeDatabase();
 		super.onDestroy();
 	}

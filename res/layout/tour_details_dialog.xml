@@ -114,17 +114,16 @@
     <View android:id="@+id/tourDetailsDialog_vFiller"
         android:layout_width="fill_parent"
         android:layout_height="15dip"
-        android:background="#000000"
         android:layout_below="@id/tourDetailsDialog_tlTable" />
     
-      <Button android:id="@+id/tourDetailsDialog_bLeaveButton"
+    <Button android:id="@+id/tourDetailsDialog_bLeaveButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@id/tourDetailsDialog_vFiller"
         android:layout_alignParentRight="true"
         android:text="@string/tourDetailsDialog_leavebutton" />
     
-   <Button android:id="@+id/tourDetailsDialog_bJoinButton"
+   	<Button android:id="@+id/tourDetailsDialog_bJoinButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_toLeftOf="@id/tourDetailsDialog_bLeaveButton"

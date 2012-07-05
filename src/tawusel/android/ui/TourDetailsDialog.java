@@ -1,13 +1,16 @@
 package tawusel.android.ui;
 
+import java.net.URLEncoder;
 import java.util.Vector;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import tawusel.andorid.R;
+import tawusel.android.database.Database;
 import tawusel.android.enums.TourKind;
 import tawusel.android.tools.communication.JSONCommunicator;
+import tawusel.android.tools.config.PropertyManager;
 import tawusel.android.ui.helper.JSONArrayHelper;
 import tawusel.android.ui.helper.Time;
 import android.app.Dialog;
@@ -16,14 +19,18 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class TourDetailsDialog extends Dialog implements OnClickListener {
+	Database db;
+	
 	private TextView tvCity, tvFrom, tvTo, tvTime, tvStatus, tvPassengers;
 	private Button bJoin, bLeave;
 	
 	private String[] tour = new String[10];
 	private String[] status = new String[3];
-	private Vector<String> user; 
+	private Vector<String> user;
+	private Context context;
 	
 	@SuppressWarnings("unchecked")
 	public TourDetailsDialog(Context context, String[] tour, String[] status, Vector<String> user) {
@@ -35,10 +42,11 @@ public class TourDetailsDialog extends Dialog implements OnClickListener {
  	   	this.tour = tour;
  	   	this.status = status;
  	   	this.user = (Vector<String>) user.clone();
+ 	   	this.context = context;
+ 	   	this.db = new Database(context);
  	   	
  	   	initGuiElements();
- 	   	setTextFieldValues();
- 	   	disableButton();
+ 	   	updateDialog();
 	}
 	
 	private void initGuiElements() {
@@ -49,8 +57,14 @@ public class TourDetailsDialog extends Dialog implements OnClickListener {
 		tvStatus = (TextView) findViewById(R.id.tourDetailsDialog_tvStatus);
 		tvPassengers = (TextView) findViewById(R.id.tourDetailsDialog_tvPassengers);
 		bJoin = (Button) findViewById(R.id.tourDetailsDialog_bJoinButton);
-		
+		bJoin.setOnClickListener(this);
 		bLeave = (Button) findViewById(R.id.tourDetailsDialog_bLeaveButton);
+		bLeave.setOnClickListener(this);
+	}
+	
+	private void updateDialog() {
+		setTextFieldValues();
+		disableButton();
 	}
 	
 	private void setTextFieldValues() {
@@ -96,17 +110,100 @@ public class TourDetailsDialog extends Dialog implements OnClickListener {
 		boolean isUserPassengerOfTour = tour[7].contains(user.get(0));
 		if(!user.isEmpty() && isUserPassengerOfTour) {
 			bJoin.setEnabled(false);
+			bLeave.setEnabled(true);
 		} else if(!isUserPassengerOfTour) {
 			bLeave.setEnabled(false);
+			bJoin.setEnabled(true);
 		}
 	}
 
 	public void onClick(View v) {
-		// TODO Auto-generated method stub
-		
+		if(v == bJoin) {
+			boolean isJoined = tryToJoinTour();
+			if(isJoined) {
+				updateDialog();
+				Toast.makeText(context, R.string.tourDetailsDialog_userJoined, Toast.LENGTH_LONG).show();
+			}
+		} else if(v == bLeave) {
+			boolean isLeft = tryToLeaveTour();
+			if(isLeft) {
+				updateDialog();
+				Toast.makeText(context, R.string.tourDetailsDialog_userLeft, Toast.LENGTH_LONG).show();
+			}
+		}
 	}
-	   
+	
+	private boolean tryToJoinTour() {
+		String params = URLEncoder.encode(user.get(0)) + "/" + tour[0];
+		try {
+			JSONArray jsonResult = JSONCommunicator.getJSONArray("joinTourByApp/", params, PropertyManager.getJSONServer());
+			
+			if(jsonResult != null) {
+				JSONObject result = jsonResult.getJSONObject(0);
+				JSONArray resultNameArray = result.names();
+				JSONArray resultValArray = result.toJSONArray(resultNameArray);
+				
+				//need to sort the json arrays because they are not build in the way they are sended
+				Vector<JSONArray> arrays = new Vector<JSONArray>();
+				arrays.add(resultNameArray);
+				arrays.add(resultValArray);
+				arrays = JSONArrayHelper.sort(arrays);
+				resultValArray = arrays.get(1);
+				
+				if(!resultValArray.get(0).toString().equals(false)) {
+					for (int j = 0; j < resultValArray.length(); j++) {
+						tour[j] = resultValArray.get(j).toString();;
+					}
+					
+					db.openDatabase();
+					db.updateTour(tour);
+					db.closeDatabase();
+					
+					return true;
+				}
+			}	
+			return false;
+		} catch (Exception e) {
+			ErrorDialog errorDialog = new ErrorDialog(context, "Unable to join the tour", e.toString() + " - " +e.getMessage());
+			errorDialog.show();
+			return false;
+		}
+	}
 
-	   
-		
+	private boolean tryToLeaveTour() {
+		String params = URLEncoder.encode(user.get(0)) + "/" + tour[0];
+		try {
+			JSONArray jsonResult = JSONCommunicator.getJSONArray("leaveTourByApp/", params, PropertyManager.getJSONServer());
+			
+			if(jsonResult != null) {
+				JSONObject result = jsonResult.getJSONObject(0);
+				JSONArray resultNameArray = result.names();
+				JSONArray resultValArray = result.toJSONArray(resultNameArray);
+				
+				//need to sort the json arrays because they are not build in the way they are sended
+				Vector<JSONArray> arrays = new Vector<JSONArray>();
+				arrays.add(resultNameArray);
+				arrays.add(resultValArray);
+				arrays = JSONArrayHelper.sort(arrays);
+				resultValArray = arrays.get(1);
+				
+				if(!resultValArray.get(0).toString().equals(false)) {
+					for (int j = 0; j < resultValArray.length(); j++) {
+						tour[j] = resultValArray.get(j).toString();;
+					}
+					
+					db.openDatabase();
+					db.updateTour(tour);
+					db.closeDatabase();
+					
+					return true;
+				}
+			}	
+			return false;
+		} catch (Exception e) {
+			ErrorDialog errorDialog = new ErrorDialog(context, "Unable to leave the tour", e.toString() + " - " +e.getMessage());
+			errorDialog.show();
+			return false;
+		}
+	}
 }
