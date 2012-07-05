@@ -21,6 +21,7 @@
             </intent-filter>
         </activity>
         <activity android:name="tawusel.android.ui.TourActivity"></activity>
+        <activity android:name="tawusel.android.ui.RegisterActivity"></activity>
     </application>
 
 </manifest>

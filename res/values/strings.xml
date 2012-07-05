@@ -8,7 +8,7 @@
     <string name="register_email">Email</string>
     <string name="register_mobilephone">Mobile phone</string>
     <string name="register_password">Password</string>
-    <string name="register_repeatpassword">Repeat password</string>
+    <string name="register_repeatpassword">confirm password</string>
     <string name="register_button">Register now!</string>
     <string name="login_head">Login</string>
     <string name="login_loggedincheckbox">Keep me logged in</string>

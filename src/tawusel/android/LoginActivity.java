@@ -11,6 +11,7 @@ import tawusel.android.database.Database;
 import tawusel.android.tools.communication.JSONCommunicator;
 import tawusel.android.tools.config.PropertyManager;
 import tawusel.android.ui.ErrorDialog;
+import tawusel.android.ui.RegisterActivity;
 import tawusel.android.ui.TourActivity;
 import tawusel.android.ui.helper.JSONArrayHelper;
 import android.app.Activity;
@@ -26,6 +27,7 @@ public class LoginActivity extends Activity implements OnClickListener {
 	private EditText etUsername, etPassword;
 	private CheckBox cbKeepMeLoggedIn;
     private Button bLogin;
+    private Button bRegister;
     
     Database db = new Database(LoginActivity.this);
 	
@@ -41,6 +43,8 @@ public class LoginActivity extends Activity implements OnClickListener {
         initDatabase();
         initFields();
         bLogin.setOnClickListener(this);
+        bRegister.setOnClickListener(this);
+
     }
     
     private void initDatabase() {
@@ -95,6 +99,7 @@ public class LoginActivity extends Activity implements OnClickListener {
         etPassword = (EditText)findViewById(R.id.login_etPassword);
         cbKeepMeLoggedIn = (CheckBox)findViewById(R.id.login_cbKeepMeLoggedIn);
         bLogin = (Button)findViewById(R.id.login_bLogin); 
+        bRegister = (Button)findViewById(R.id.login_bRegisterButton);
     }
     
     public void onClick(View v) {
@@ -102,6 +107,8 @@ public class LoginActivity extends Activity implements OnClickListener {
     		String userEmail = etUsername.getText().toString();
     		String hashedPassword = JSONCommunicator.getHashString(etPassword.getText().toString());
     		tryToLogin(userEmail, hashedPassword);
+    	} else if (v == bRegister){
+    		openRegisterActivity();
     	}
     }
     
@@ -151,4 +158,10 @@ public class LoginActivity extends Activity implements OnClickListener {
     	Intent i = new Intent(LoginActivity.this, TourActivity.class);
 		startActivity(i);
     }
+    
+    private void openRegisterActivity() {
+    	Intent i = new Intent(LoginActivity.this, RegisterActivity.class);
+		startActivity(i);
+    }
+    
 } 

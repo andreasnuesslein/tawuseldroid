@@ -7,22 +7,35 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.zip.DataFormatException;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpParams;
+import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.util.Log;
+import android.widget.Toast;
 
+/**
+ * @author mareikeziese
+ *
+ */
 public class JSONCommunicator {
 
 	private static final String TAG = "JSONCommunicator";
@@ -33,9 +46,10 @@ public class JSONCommunicator {
 	 * @param String
 	 *            url
 	 * @return JSONObject
-	 * @throws Exception  
+	 * @throws Exception
 	 */
-	public static JSONArray getJSONArray(String method, String params, String serverUrl) throws Exception {
+	public static JSONArray getJSONArray(String method, String params,
+			String serverUrl) throws Exception {
 		String url = serverUrl + method + params;
 		Log.i(TAG, url);
 		HttpClient httpClient = new DefaultHttpClient();
@@ -47,13 +61,13 @@ public class JSONCommunicator {
 			response = httpClient.execute(httpGet);
 			Log.i(TAG, response.getStatusLine().toString());
 			HttpEntity entity = response.getEntity();
-			
+
 			if (entity != null) {
-				String httpResultContent = getResultContent(entity); 
+				String httpResultContent = getResultContent(entity);
 				Log.i(TAG, httpResultContent);
 				json = new JSONArray(httpResultContent);
 			}
-			
+
 			httpGet.abort();
 		} catch (Exception e) {
 			httpGet.abort();
@@ -62,13 +76,25 @@ public class JSONCommunicator {
 		}
 		return json;
 	}
-	
-	public static JSONArray parseJSArray(String arrayString) throws JSONException {
+
+	public static JSONArray parseJSArray(String arrayString)
+			throws JSONException {
 		JSONArray json = new JSONArray(arrayString);
 		return json;
 	}
 
-	public static JSONObject getJSONObject(String method, String params, String serverUrl) throws Exception {
+	
+	/**
+	 * gets a JsonObject via HttpGet form the json-server
+	 * 
+	 * @param method
+	 * @param params
+	 * @param serverUrl
+	 * @return JSONObject
+	 * @throws Exception
+	 */
+	public static JSONObject getJSONObject(String method, String params,
+			String serverUrl) throws Exception {
 		String url = serverUrl + method + params;
 		Log.i(TAG, url);
 		HttpClient httpClient = new DefaultHttpClient();
@@ -80,13 +106,13 @@ public class JSONCommunicator {
 			response = httpClient.execute(httpGet);
 			Log.i(TAG, response.getStatusLine().toString());
 			HttpEntity entity = response.getEntity();
-			
+
 			if (entity != null) {
-				String httpResultContent = getResultContent(entity); 
+				String httpResultContent = getResultContent(entity);
 				Log.i(TAG, httpResultContent);
 				json = new JSONObject(httpResultContent);
 			}
-			
+
 			httpGet.abort();
 		} catch (Exception e) {
 			httpGet.abort();
@@ -96,30 +122,42 @@ public class JSONCommunicator {
 		return json;
 	}
 
-	
-	private static String getResultContent(HttpEntity entity) throws IllegalStateException, IOException {
+	private static String getResultContent(HttpEntity entity)
+			throws IllegalStateException, IOException {
 		InputStream instream = entity.getContent();
-		BufferedReader reader = new BufferedReader(
-				new InputStreamReader(instream));
+		BufferedReader reader = new BufferedReader(new InputStreamReader(
+				instream));
 		StringBuilder sb = new StringBuilder();
 		String line = null;
 		while ((line = reader.readLine()) != null)
 			sb.append(line + "n");
 		instream.close();
 		return sb.toString();
-		
+
 	}
 
-	public static String getHashString(String hstr){
-			try {
-				return SHA1(hstr);
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-				return "";
-			}
+	
+	/**
+	 * hashes a String with SHA1
+	 * @param hstr
+	 * @return String
+	 */
+	public static String getHashString(String hstr) {
+		try {
+			return SHA1(hstr);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return "";
+		}
 	}
 
+	
+	/**
+	 * convert a byte[] field to a String
+	 * @param data
+	 * @return String 
+	 */
 	private static String convertToHex(byte[] data) {
 		StringBuffer buf = new StringBuffer();
 		for (int i = 0; i < data.length; i++) {
@@ -147,7 +185,7 @@ public class JSONCommunicator {
 	}
 
 	/**
-	 * return true if post was successful, else false
+	 * return the answer of the server if post was successful, else "couldn't connect to server"
 	 * 
 	 * @param url
 	 * @param data
@@ -155,36 +193,36 @@ public class JSONCommunicator {
 	 * @return boolean
 	 */
 	@SuppressWarnings("finally")
-	public static boolean postJSONObject(String url, JSONObject data,
-			String objectName) {
+	public static String postJSONObject(String url, JSONObject data) {
+		String message="";
 		HttpClient httpClient = new DefaultHttpClient();
 		HttpPost postMethod = new HttpPost(url);
 		boolean success = false;
 
 		try {
 			HttpParams params = new BasicHttpParams();
-			params.setParameter(objectName, data.toString());
-			postMethod.setParams(params);
-			httpClient.execute(postMethod);
+			Iterator<String> keys = data.keys();
+			List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(1);
+			Log.i(TAG, "Post request, data: " + nameValuePairs.toString());
+			while (keys.hasNext()) {
+				String key = (String) keys.next();
+				nameValuePairs.add(new BasicNameValuePair(key, data.getString(key)));
+			}
+		    postMethod.setEntity(new UrlEncodedFormEntity(nameValuePairs, "UTF-8"));
+		    HttpResponse response = httpClient.execute(postMethod);
+		    HttpEntity entity = response.getEntity();
 			success = true;
-			Log.i(TAG, "Post request, data: " + params.toString());
-
-		} catch (ClientProtocolException e) {
-
-			e.printStackTrace();
-
-		} catch (IOException e) {
-
-			e.printStackTrace();
+			message =EntityUtils.toString(entity);
 
 		} catch (Exception e) {
 
 			e.printStackTrace();
+			message =  "couldn't connect to server";
 
 		} finally {
 
 			postMethod.abort();
-			return success;
+			return message;
 
 		}
 
