@@ -1,6 +1,12 @@
 package tawusel.android.ui;
 
 import java.net.URLEncoder;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+import java.util.StringTokenizer;
 import java.util.Vector;
 
 import org.json.JSONArray;
@@ -14,10 +20,10 @@ import tawusel.android.tools.config.PropertyManager;
 import tawusel.android.ui.helper.JSONArrayHelper;
 import tawusel.android.ui.helper.Time;
 import android.app.Activity;
+import android.app.DatePickerDialog;
 import android.app.Dialog;
+import android.app.TimePickerDialog;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.content.DialogInterface.OnDismissListener;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.Menu;
@@ -25,11 +31,17 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemSelectedListener;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.DatePicker;
+import android.widget.Spinner;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TableRow.LayoutParams;
 import android.widget.TextView;
+import android.widget.TimePicker;
 import android.widget.Toast;
 
 public class TourActivity extends Activity {
@@ -39,8 +51,6 @@ public class TourActivity extends Activity {
 	private TableLayout tblTours;
 	private boolean resumeHasRun = false;
 
-	
-	
 	/** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -255,6 +265,15 @@ public class TourActivity extends Activity {
 			    	   
 			    	   TourDetailsDialog tourDetailsDialog = new TourDetailsDialog(context, tour, status, user);
 			    	   tourDetailsDialog.show();
+		    	   } else {
+		    		   int tourId = Integer.parseInt(rowTag.replace("t", ""));
+		    		   db.openDatabase();
+			    	   String[] tour = db.getTemplate(tourId);
+			    	   Vector<String> user = db.getLoggedInUser();
+			    	   db.closeDatabase();
+			    	   
+			    	   CreateTourDialog createTourDialog = new CreateTourDialog(context, tour, user);
+			    	   createTourDialog.show();
 		    	   }
 		       }
 		});
@@ -275,7 +294,8 @@ public class TourActivity extends Activity {
 	}
 	
 	private void createNewTour() {
-		Toast.makeText(this,"TODO, create a new Tour",Toast.LENGTH_LONG).show();
+		CreateTourDialog createTourDialog = new CreateTourDialog(context, getLoggedInUser());
+  	   	createTourDialog.show();
 	}
 
 	private void showHelp() {
@@ -302,7 +322,7 @@ public class TourActivity extends Activity {
 		super.onDestroy();
 	}
 	
-	private class TourDetailsDialog extends Dialog implements OnClickListener, OnDismissListener {
+	private class TourDetailsDialog extends Dialog implements OnClickListener {
 		Database db;
 		
 		private TextView tvCity, tvFrom, tvTo, tvTime, tvStatus, tvPassengers;
@@ -492,13 +512,380 @@ public class TourActivity extends Activity {
 				return false;
 			}
 		}
-
-		public void onDismiss(DialogInterface dialog) {
-			TourActivity.this.updateTourRows(false);
-		}
 	}
 
-	
+	private class CreateTourDialog extends Dialog implements OnClickListener, OnItemSelectedListener {
+		Database db;
+		
+		private Spinner spCity, spFrom, spTo;
+		private TextView tvDate, tvFromTime, tvToTime;
+		private Button bCreate;
+		
+		private String[] tour = new String[10];
+		private Vector<String> user;
+		private Context context;
+		
+		private List<CharSequence> townList = new ArrayList<CharSequence>();
+		private int townSpinnerSelectedId = 0;
+		private List<CharSequence> locationList = new ArrayList<CharSequence>();
+		private int fromLocationSpinnerSelectedId = 0;
+		private int toLocationSpinnerSelectedId = 0;
+		private boolean hasChangedTown = false;
+		
+		private int suggestedYear;
+		private int suggestedMonth;
+		private int suggestedDay;
+		
+		private int fromHours;
+		private int fromMinutes;
+		private int toHours;
+		private int toMinutes;
+		private String estimateRequest = "googleest/";
+		
+		
+		@SuppressWarnings("unchecked")
+		public CreateTourDialog(Context context, String[] tour, Vector<String> user) {
+			super(context);
+			
+			this.setContentView(R.layout.create_tour_dialog);
+	 	   	this.setTitle(R.string.createTourDialog_head);
+	 	   	
+	 	   	this.tour = tour;
+	 	   	this.user = (Vector<String>) user.clone();
+	 	   	this.context = context;
+	 	   	this.db = new Database(context);
+	 	   	
+	 		initGuiElements();
+	 		initSuggestedDate();
+	 		updateLists();
+
+	 	   	addItemstoCitySpinner();
+	 	   	updateTvDate();
+	 	   	updateTvTimes();
+		}
+		
+		@SuppressWarnings("unchecked")
+		public CreateTourDialog(Context context, Vector<String> user) {
+			super(context);
+			
+			this.setContentView(R.layout.create_tour_dialog);
+	 	   	this.setTitle(R.string.createTourDialog_head);
+	 	   	
+	 	   	this.user = (Vector<String>) user.clone();
+	 	   	this.context = context;
+	 	   	this.db = new Database(context);
+	 	   	this.tour = createNewTour();
+	 	   	
+	 	   	initGuiElements();
+	 	   	initSuggestedDate();
+	 	   	updateLists();
+	 	   	addItemstoCitySpinner();
+	 	   	
+	 	   	updateTvDate();
+	 	   	updateTvTimes();
+
+		}
+
+		private String[] createNewTour() {
+			db.openDatabase();
+	 	   	String[] newTour = new String[10];
+	 	   	String[] townObjectFromDb = db.getTown(1);
+	 	   	Vector<String[]> locationsFromDb = db.getAllLocations(townObjectFromDb[1]); 
+	 	   	
+	 	   	newTour[1] = townObjectFromDb[1];
+	 	   	newTour[2] = (locationsFromDb.get(0))[1];
+	 	   	newTour[3] = (locationsFromDb.get(1))[1];
+	 	   	newTour[4] = Long.toString(getSuggestedTime());
+	 	   	newTour[5] = Long.toString(getSuggestedTime()+600000);
+	 	   	newTour[9] = TourKind.ACTIVE.toString();
+	 	   	db.closeDatabase();
+	 	   	
+	 	   	return newTour;
+		}
+		
+		private Long getSuggestedTime() {
+			Calendar cal = Calendar.getInstance();
+	 	   	long time = cal.getTimeInMillis();
+	 	   	return time + (1000 * 60 * 30);
+		}
+		
+		private void updateLists() {
+			db.openDatabase();
+			
+			//townList
+			if(townList.isEmpty()) {
+				Vector<String[]> allTowns = db.getAllTowns();
+				for(String[] town : allTowns) {
+					townList.add(town[1]);
+					if(town[1].equals(tour[1])) {
+						townSpinnerSelectedId = townList.size()-1;
+					}
+				}
+			}
+			
+			//locationList
+			Vector<String[]> allLocations = db.getAllLocations(tour[1]);
+			locationList.clear();
+			fromLocationSpinnerSelectedId = -1;
+			toLocationSpinnerSelectedId = -1;
+			for(String[] location : allLocations) {
+				locationList.add(location[1]);
+				if(location[1].equals(tour[2])) {
+					fromLocationSpinnerSelectedId = locationList.size()-1;
+				} else if(location[1].equals(tour[3])) {
+					toLocationSpinnerSelectedId = locationList.size()-1;
+				}
+			}
+			
+			if(fromLocationSpinnerSelectedId==-1) {
+				fromLocationSpinnerSelectedId=0;
+			}
+			if(toLocationSpinnerSelectedId==-1) {
+				toLocationSpinnerSelectedId=1;
+			}
+			db.closeDatabase();
+		}
+		
+		private void initGuiElements() {
+			spCity = (Spinner) findViewById(R.id.createTourDialog_spCity);
+			spCity.setOnItemSelectedListener(this);
+			spFrom = (Spinner) findViewById(R.id.createTourDialog_spFrom);
+			spFrom.setOnItemSelectedListener(this);
+			spTo = (Spinner) findViewById(R.id.createTourDialog_spTo);
+			spTo.setOnItemSelectedListener(this);
+			bCreate = (Button) findViewById(R.id.createTourDialog_bCreate);
+			bCreate.setOnClickListener(this);
+			tvDate = (TextView) findViewById(R.id.createTourDialog_tvDate);
+			tvDate.setOnClickListener(this);
+			tvFromTime = (TextView) findViewById(R.id.createTourDialog_tvFromTime);
+			tvFromTime.setOnClickListener(this);
+			tvToTime = (TextView) findViewById(R.id.createTourDialog_tvToTime);
+			tvToTime.setOnClickListener(this);
+		}
+		
+		private void addItemstoCitySpinner() {
+			ArrayAdapter<CharSequence> dataAdapter = new ArrayAdapter<CharSequence>(context, android.R.layout.simple_spinner_item, townList);
+			dataAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+			spCity.setAdapter(dataAdapter);
+			spCity.setSelection(townSpinnerSelectedId);
+		}
+		
+		private void addItemstoLocationSpinners() {
+			ArrayAdapter<CharSequence> fromDataAdapter = new ArrayAdapter<CharSequence>(context, android.R.layout.simple_spinner_item, locationList);
+			fromDataAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+			spFrom.setAdapter(fromDataAdapter);
+			spFrom.setSelection(fromLocationSpinnerSelectedId);
+				
+			ArrayAdapter<CharSequence> toDataAdapter = new ArrayAdapter<CharSequence>(context, android.R.layout.simple_spinner_item, locationList);
+			toDataAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+			spTo.setAdapter(toDataAdapter);
+			spTo.setSelection(toLocationSpinnerSelectedId);
+		}
+		
+		public void onItemSelected(AdapterView<?> parent, View v, int pos, long id) {
+			if(parent==spCity) {
+				townSpinnerSelectedId = pos;
+				tour[1] = townList.get(pos).toString();
+				updateLists();
+				addItemstoLocationSpinners();
+				hasChangedTown = true;
+			} else if(parent==spFrom) {
+				fromLocationSpinnerSelectedId = pos;
+				tour[2] = locationList.get(pos).toString();
+				
+				if(!hasChangedTown) {
+					fromTimeSetListener.onTimeSet(null, fromHours, fromMinutes);
+				}
+			} else if(parent==spTo) {
+				toLocationSpinnerSelectedId = pos;
+				tour[3] = locationList.get(pos).toString();
+				toTimeSetListener.onTimeSet(null, toHours, toMinutes);
+				hasChangedTown = false;
+			}
+		}
+
+		public void onNothingSelected(AdapterView<?> parent) {
+			//nothing to do here
+		}
+		
+		private void updateTvDate() {
+			String date = prependZeros(suggestedDay) + "." + prependZeros(suggestedMonth) + 
+					"." + suggestedYear;
+			tvDate.setText(date);
+		}
+		
+		private void updateTvTimes() {
+			String fromTime = prependZeros(fromHours) + ":" + prependZeros(fromMinutes) + " ";
+			tvFromTime.setText(fromTime);
+			
+			String toTime = prependZeros(toHours) + ":" + prependZeros(toMinutes);
+			tvToTime.setText(toTime);
+		}
+		
+		private String prependZeros(int c) {
+			if (c >= 10)
+			   return String.valueOf(c);
+			else
+			   return "0" + String.valueOf(c);
+		}
+		
+		private String getTimeString(Date date) {
+			SimpleDateFormat df = new SimpleDateFormat("HH:mm");
+			return df.format(date);
+		}
+		
+		private String getDateString(Date date) {
+			SimpleDateFormat df = new SimpleDateFormat("dd.MM.yyyy");
+			return df.format(date);
+		}
+		
+		private void initSuggestedDate() {
+			String depTime = getTimeString(new Date(Long.parseLong(tour[4])));
+			String arrTime = getTimeString(new Date(Long.parseLong(tour[5])));
+			Calendar cal = Calendar.getInstance();
+			Date today = cal.getTime();
+			String currentTime = getTimeString(today);
+			
+			SimpleDateFormat df = new SimpleDateFormat("dd.MM.yyyy HH:mm");
+			try {
+				Date now = df.parse(getDateString(today) + " " + currentTime);
+				Date suggestion = df.parse(getDateString(today) + " " + depTime);
+				if(now.before(suggestion)) {
+					setDateInts(cal);
+				} else {
+					cal.add(cal.DAY_OF_MONTH, 1);
+					setDateInts(cal);
+				}
+			} catch (Exception e) {
+				setDateInts(cal);
+			}
+			setTimeInts(depTime, arrTime);
+		}
+
+		private void setDateInts(Calendar cal) {
+			suggestedYear = cal.get(Calendar.YEAR);
+			//starts with 0? wtf?
+			suggestedMonth = cal.get(Calendar.MONTH)+1;
+			suggestedDay = cal.get(Calendar.DAY_OF_MONTH);
+		}
+		
+		private void setTimeInts(String depTime, String arrTime) {
+			StringTokenizer st = new StringTokenizer(depTime, ":");
+			if(st.countTokens()==2) {
+				fromHours = Integer.parseInt(st.nextToken());
+				fromMinutes = Integer.parseInt(st.nextToken());
+			}
+			
+			st = new StringTokenizer(arrTime, ":");
+			if(st.countTokens()==2) {
+				toHours = Integer.parseInt(st.nextToken());
+				toMinutes = Integer.parseInt(st.nextToken());
+			}
+		}
+
+		public void onClick(View v) {
+			if(v==tvDate) {
+				//wtf? does it start at moth + 1?
+				DatePickerDialog dialog = new DatePickerDialog(context, dateSetListener, suggestedYear, suggestedMonth-1, suggestedDay);
+				dialog.show();
+			} else if(v==tvFromTime) {
+				TimePickerDialog dialog = new TimePickerDialog(context, fromTimeSetListener, fromHours, fromMinutes, true);
+				dialog.show();
+			} else if(v==tvToTime) {
+				TimePickerDialog dialog = new TimePickerDialog(context, toTimeSetListener, toHours, toMinutes, true);
+				dialog.show();
+			} else if(v==bCreate) {
+				tryToCreateATour();
+			}
+		}
+
+		private DatePickerDialog.OnDateSetListener dateSetListener =
+                new DatePickerDialog.OnDateSetListener() {
+
+                public void onDateSet(DatePicker view, int dpYear, int dpMonthOfYear,
+                                int dpDayOfMonth) {
+                        suggestedYear = dpYear;
+                        suggestedMonth = dpMonthOfYear+1;
+                        suggestedDay = dpDayOfMonth;
+                        updateTvDate();
+                }
+        };
+        
+       
+        private TimePickerDialog.OnTimeSetListener fromTimeSetListener = 
+                new TimePickerDialog.OnTimeSetListener() {
+    		
+        		public void onTimeSet(TimePicker view, int tpHour, int tpMinute) {
+	    			fromHours = tpHour;
+	    			fromMinutes = tpMinute;
+	     
+	    			try {
+						int duration = getDuration();
+						int timeSum = duration + fromMinutes;
+						
+						if(timeSum >= 60) {
+							toHours = fromHours + 1;
+							toMinutes = timeSum % 60;
+						} else {
+							toHours = fromHours;
+							toMinutes = timeSum; 
+						}
+					} catch (Exception e) {
+						ErrorDialog errorDialog = new ErrorDialog(context, e.toString(), e.getMessage());
+						errorDialog.show();
+					}
+	    			
+	    			updateTvTimes();
+	    		}
+    	};
+    	
+    	private TimePickerDialog.OnTimeSetListener toTimeSetListener = 
+                new TimePickerDialog.OnTimeSetListener() {
+    		
+        		public void onTimeSet(TimePicker view, int tpHour, int tpMinute) {
+    			toHours = tpHour;
+    			toMinutes = tpMinute;
+     
+    			try {
+					int duration = getDuration();
+					int timeDifference = toMinutes - duration;
+					
+					if(duration < toMinutes) {
+						fromHours = toHours;
+						fromMinutes = timeDifference;
+					} else {
+						fromHours = toHours - 1;
+						fromMinutes = 60 + timeDifference; 
+					}
+				} catch (Exception e) {
+					ErrorDialog errorDialog = new ErrorDialog(context, e.toString(), e.getMessage());
+					errorDialog.show();
+				}
+    			
+    			updateTvTimes();
+    		}
+    	};
+		
+    	private String getLocationParameters() {
+    		db.openDatabase();
+			int fromId = db.getLocationId(tour[2], tour[1]);
+			int toId = db.getLocationId(tour[3], tour[1]);
+			db.closeDatabase();
+			
+			return fromId + "/" + toId;
+    	}
+
+    	private int getDuration() throws Exception {
+    		JSONObject minutesObject = JSONCommunicator.getJSONObject(estimateRequest, 
+					getLocationParameters(), PropertyManager.getJSONServer());
+			return minutesObject.getInt("dur");
+    	}
+    	
+    	private void tryToCreateATour() {
+    		
+    	}
+	}
 }
+
 
 

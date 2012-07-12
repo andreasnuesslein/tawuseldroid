@@ -31,6 +31,10 @@ public class LoginActivity extends Activity implements OnClickListener {
     
     Database db = new Database(LoginActivity.this);
 	
+    private final String statusUpdateMethodName = "getTourStatusValuesByApp";
+    private final String townUpdateMethodName = "getTownValuesByApp";
+    private final String locationUpdateMethodName = "getLocationValuesByApp";
+    
 	/** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -51,7 +55,7 @@ public class LoginActivity extends Activity implements OnClickListener {
     	try {
 			db.openDatabase();
 			db.resetDatabase();
-			updateStatusFromWebservice();
+			updateStableValues();
 			Vector<String> loggedInUserData = db.getLoggedInUser();
 			if(!loggedInUserData.isEmpty()) {
 				String email = loggedInUserData.get(0);
@@ -64,29 +68,41 @@ public class LoginActivity extends Activity implements OnClickListener {
 		} finally {
 			db.closeDatabase();
 		}
-		
 	}
 
-	private void updateStatusFromWebservice() {
+    private void updateStableValues() {
+    	updateStableVaulesFromWebservice(statusUpdateMethodName);
+    	updateStableVaulesFromWebservice(townUpdateMethodName);
+    	updateStableVaulesFromWebservice(locationUpdateMethodName);
+    }
+    
+	private void updateStableVaulesFromWebservice(String methodName) {
 		try {
-			JSONArray jsonStates = JSONCommunicator.getJSONArray("getTourStatusValuesByApp", "", PropertyManager.getJSONServer());
-			for (int i = 0; i < jsonStates.length(); i++) {
-				JSONObject state = jsonStates.getJSONObject(i);
-				JSONArray stateNameArray = state.names();
-				JSONArray stateValArray = state.toJSONArray(stateNameArray);
+			JSONArray jsonArray = JSONCommunicator.getJSONArray(methodName, "", PropertyManager.getJSONServer());
+			for (int i = 0; i < jsonArray.length(); i++) {
+				JSONObject jsonObject = jsonArray.getJSONObject(i);
+				JSONArray objectNameArray = jsonObject.names();
+				JSONArray objectValArray = jsonObject.toJSONArray(objectNameArray);
 				
 				//need to sort the json arrays because they are not build in the way they are sended
 				Vector<JSONArray> arrays = new Vector<JSONArray>();
-				arrays.add(stateNameArray);
-				arrays.add(stateValArray);
+				arrays.add(objectNameArray);
+				arrays.add(objectValArray);
 				arrays = JSONArrayHelper.sort(arrays);
-				stateValArray = arrays.get(1);
+				objectValArray = arrays.get(1);
 				
-				String[] stateData = new String[3];
-				for (int j = 0; j < stateValArray.length(); j++) {
-					stateData[j] = stateValArray.get(j).toString();;
+				String[] data = new String[4];
+				for (int j = 0; j < objectValArray.length(); j++) {
+					data[j] = objectValArray.get(j).toString();;
 				}	
-				db.insertState(stateData);
+				
+				if(methodName.equals(statusUpdateMethodName)) {
+					db.insertState(data);
+				} else if(methodName.equals(townUpdateMethodName)) {
+					db.insertTown(data);
+				} else if(methodName.equals(locationUpdateMethodName)) {
+					db.insertLocation(data);
+				}
 			}
 		} catch (Exception e) {
 			ErrorDialog errorDialog = new ErrorDialog(this, e.toString(), e.getMessage());

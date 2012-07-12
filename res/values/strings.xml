@@ -31,7 +31,10 @@
     <string name="tourDetailsDialog_passengers">Passengers:</string>
     <string name="tourDetailsDialog_joinbutton">join</string>
     <string name="tourDetailsDialog_leavebutton">leave</string>
-    <string name="tourDetailsDialog_createbutton">create</string>
     <string name="tourDetailsDialog_userJoined">You successfully joined the Tour!</string>
     <string name="tourDetailsDialog_userLeft">You successfully left the Tour!</string>
+    <string name="createTourDialog_createbutton">create</string>
+    <string name="createTourDialog_head">Create a new Tour</string>
+    <string name="createTourDialog_date">Date:</string>
+    <string name="createTourDialog_timeSeperator"> - </string>
 </resources>

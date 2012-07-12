@@ -1,5 +1,9 @@
 package tawusel.android.enums;
 
+/**
+ * Public enum to distinguish between the different types 
+ * of a tour. 
+ */
 public enum TourKind {
 	ACTIVE(1),
 	TEMPLATE(2),
