@@ -4,6 +4,16 @@
     android:layout_height="fill_parent"
     android:orientation="vertical">
 
+    <ScrollView android:id="@+id/ScrollView01" 
+        android:isScrollContainer="true" 
+        android:layout_width="fill_parent" 
+        android:layout_height="fill_parent">
+    
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+     	android:layout_width="fill_parent"
+    	android:layout_height="fill_parent"
+    	android:orientation="vertical">
+    
     <TableLayout 
         android:id="@+id/tours_headTable"
         android:layout_width="fill_parent"
@@ -65,5 +75,7 @@
 			    android:layout_weight="1"/>
     	</TableRow>
     </TableLayout>
+    </LinearLayout>
+    </ScrollView>
 </LinearLayout>
 

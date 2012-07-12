@@ -1,6 +1,7 @@
 package tawusel.android.ui;
 
 import java.net.URLEncoder;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -10,6 +11,7 @@ import java.util.StringTokenizer;
 import java.util.Vector;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import tawusel.andorid.R;
@@ -20,12 +22,14 @@ import tawusel.android.tools.config.PropertyManager;
 import tawusel.android.ui.helper.JSONArrayHelper;
 import tawusel.android.ui.helper.Time;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.app.TimePickerDialog;
 import android.content.Context;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -150,21 +154,18 @@ public class TourActivity extends Activity {
 
 		for (int i = 0; i < jsonTours.length(); i++) {
 			JSONObject tour = jsonTours.getJSONObject(i);
-			JSONArray tourNameArray = tour.names();
-			JSONArray tourValArray = tour.toJSONArray(tourNameArray);
-			
-			//need to sort the json arrays because they are not build in the way they are sended
-			Vector<JSONArray> arrays = new Vector<JSONArray>();
-			arrays.add(tourNameArray);
-			arrays.add(tourValArray);
-			arrays = JSONArrayHelper.sort(arrays);
-			tourValArray = arrays.get(1);
 			
 			if(!isTemplateTour) {
 				String[] tourData = new String[10];
-				for (int j = 0; j < tourValArray.length(); j++) {
-					tourData[j] = tourValArray.get(j).toString();;
-				}
+				tourData[0] = tour.getString("id");
+				tourData[1] = tour.getJSONObject("town").getString("name");
+				tourData[2] = tour.getJSONObject("l1").getString("name");
+				tourData[3] = tour.getJSONObject("l2").getString("name");
+				tourData[4] = tour.getString("dep");
+				tourData[5] = tour.getString("arr");
+				tourData[6] = tour.getString("state");
+				tourData[7] = tour.getString("users");
+				tourData[8] = tour.getString("mod");
 				
 				db.openDatabase();
 				if(methodName.contains("Active")) {
@@ -177,9 +178,11 @@ public class TourActivity extends Activity {
 				db.closeDatabase();
 			} else {
 				String[] templateData = new String[5];
-				for (int j = 0; j < tourValArray.length(); j++) {
-					templateData[j] = tourValArray.get(j).toString();;
-				}
+				templateData[0] = tour.getJSONObject("town").getString("name");
+				templateData[1] = tour.getJSONObject("l1").getString("name");
+				templateData[2] = tour.getJSONObject("l2").getString("name");
+				templateData[3] = tour.getString("dep"); 
+				templateData[4] = tour.getString("arr");
 				
 				db.openDatabase();
 				db.insertTemplate(templateData);
@@ -259,7 +262,7 @@ public class TourActivity extends Activity {
 		    		   int tourId = Integer.parseInt(rowTag);
 			    	   db.openDatabase();
 			    	   String[] tour = db.getTour(tourId);
-			    	   String[] status = db.getState(Integer.parseInt(tour[8]));
+			    	   String[] status = db.getState(Integer.parseInt(tour[6]));
 			    	   Vector<String> user = db.getLoggedInUser();
 			    	   db.closeDatabase();
 			    	   
@@ -299,7 +302,18 @@ public class TourActivity extends Activity {
 	}
 
 	private void showHelp() {
-		Toast.makeText(this,"TODO, create HELP",Toast.LENGTH_LONG).show();
+		Dialog dialog = new Dialog(this);
+
+		dialog.setContentView(R.layout.help_dialog);
+		dialog.setTitle("Help");
+
+		TextView text = (TextView) dialog.findViewById(R.id.helpDialog_text);
+		text.setText("On the main screen you can see the tours table. Your active tours " +
+				"are displayed in green while all available tours provide by other users have the " +
+				"color white. Last but not least there are your template tours. \n" +
+				"By clicking on a tour you can either join or leave it. By clicking on a template " +
+				"you can create a new tour.");
+		dialog.show();
 	}
 
 	private void logoutUser() {
@@ -425,6 +439,9 @@ public class TourActivity extends Activity {
 					updateDialog();
 					TourActivity.this.updateTourRows(false);
 					Toast.makeText(context, R.string.tourDetailsDialog_userJoined, Toast.LENGTH_LONG).show();
+					this.dismiss();
+				} else {
+					Toast.makeText(context, R.string.tourDetailsDialog_userNotJoined, Toast.LENGTH_LONG).show();
 				}
 			} else if(v == bLeave) {
 				boolean isLeft = tryToLeaveTour();
@@ -432,6 +449,9 @@ public class TourActivity extends Activity {
 					updateDialog();
 					TourActivity.this.updateTourRows(false);
 					Toast.makeText(context, R.string.tourDetailsDialog_userLeft, Toast.LENGTH_LONG).show();
+					this.dismiss();
+				} else {
+					Toast.makeText(context, R.string.tourDetailsDialog_userNotLeft, Toast.LENGTH_LONG).show();
 				}
 			}
 		}
@@ -439,33 +459,18 @@ public class TourActivity extends Activity {
 		private boolean tryToJoinTour() {
 			String params = URLEncoder.encode(user.get(0)) + "/" + tour[0];
 			try {
-				JSONArray jsonResult = JSONCommunicator.getJSONArray("joinTourByApp/", params, PropertyManager.getJSONServer());
+				JSONObject result = JSONCommunicator.getJSONObject("joinTourByApp/", params, PropertyManager.getJSONServer());
 				
-				if(jsonResult != null) {
-					JSONObject result = jsonResult.getJSONObject(0);
-					JSONArray resultNameArray = result.names();
-					JSONArray resultValArray = result.toJSONArray(resultNameArray);
+				if(result != null) {
+					parseJSONObject(result);
+					tour[9] = TourKind.ACTIVE.toString();
 					
-					//need to sort the json arrays because they are not build in the way they are sended
-					Vector<JSONArray> arrays = new Vector<JSONArray>();
-					arrays.add(resultNameArray);
-					arrays.add(resultValArray);
-					arrays = JSONArrayHelper.sort(arrays);
-					resultValArray = arrays.get(1);
+					db.openDatabase();
+					db.updateTour(tour);
+					db.closeDatabase();
 					
-					if(!resultValArray.get(0).toString().equals(false)) {
-						for (int j = 0; j < resultValArray.length(); j++) {
-							tour[j] = resultValArray.get(j).toString();;
-						}
-						tour[9] = TourKind.ACTIVE.toString();
-						
-						db.openDatabase();
-						db.updateTour(tour);
-						db.closeDatabase();
-						
-						return true;
-					}
-				}	
+					return true;
+				}
 				return false;
 			} catch (Exception e) {
 				ErrorDialog errorDialog = new ErrorDialog(context, "Unable to join the tour", e.toString() + " - " +e.getMessage());
@@ -477,26 +482,19 @@ public class TourActivity extends Activity {
 		private boolean tryToLeaveTour() {
 			String params = URLEncoder.encode(user.get(0)) + "/" + tour[0];
 			try {
-				JSONArray jsonResult = JSONCommunicator.getJSONArray("leaveTourByApp/", params, PropertyManager.getJSONServer());
+				JSONObject result = JSONCommunicator.getJSONObject("leaveTourByApp/", params, PropertyManager.getJSONServer());
 				
-				if(jsonResult != null) {
-					JSONObject result = jsonResult.getJSONObject(0);
-					JSONArray resultNameArray = result.names();
-					JSONArray resultValArray = result.toJSONArray(resultNameArray);
-					
-					//need to sort the json arrays because they are not build in the way they are sended
-					Vector<JSONArray> arrays = new Vector<JSONArray>();
-					arrays.add(resultNameArray);
-					arrays.add(resultValArray);
-					arrays = JSONArrayHelper.sort(arrays);
-					resultValArray = arrays.get(1);
-					
-					if(!resultValArray.get(0).toString().equals(false)) {
-						for (int j = 0; j < resultValArray.length(); j++) {
-							tour[j] = resultValArray.get(j).toString();;
-						}
+				if(result != null) {
+					if(result.has("_1")) {
+						db.openDatabase();
+						db.deleteTour(Integer.parseInt(tour[0]));
+						db.closeDatabase();
+						return true;
+					} else if(result.has("_2")){
+						return false;
+					} else {
+						parseJSONObject(result);
 						tour[9] = TourKind.AVAILABLE.toString();
-						
 						
 						db.openDatabase();
 						db.updateTour(tour);
@@ -504,7 +502,7 @@ public class TourActivity extends Activity {
 						
 						return true;
 					}
-				}	
+				}
 				return false;
 			} catch (Exception e) {
 				ErrorDialog errorDialog = new ErrorDialog(context, "Unable to leave the tour", e.toString() + " - " +e.getMessage());
@@ -512,8 +510,20 @@ public class TourActivity extends Activity {
 				return false;
 			}
 		}
+	
+		private void parseJSONObject(JSONObject result) throws JSONException {
+			tour[0] = result.getString("id");
+			tour[1] = result.getJSONObject("town").getString("name");
+			tour[2] = result.getJSONObject("l1").getString("name");
+			tour[3] = result.getJSONObject("l2").getString("name");
+			tour[4] = result.getString("dep");
+			tour[5] = result.getString("arr");
+			tour[6] = result.getString("state");
+			tour[7] = result.getString("users");
+			tour[8] = result.getString("mod");
+		}
 	}
-
+		
 	private class CreateTourDialog extends Dialog implements OnClickListener, OnItemSelectedListener {
 		Database db;
 		
@@ -811,7 +821,7 @@ public class TourActivity extends Activity {
                 }
         };
         
-       
+            
         private TimePickerDialog.OnTimeSetListener fromTimeSetListener = 
                 new TimePickerDialog.OnTimeSetListener() {
     		
@@ -825,6 +835,9 @@ public class TourActivity extends Activity {
 						
 						if(timeSum >= 60) {
 							toHours = fromHours + 1;
+							if (toHours==24) {
+								toHours = 0;
+							}
 							toMinutes = timeSum % 60;
 						} else {
 							toHours = fromHours;
@@ -850,11 +863,14 @@ public class TourActivity extends Activity {
 					int duration = getDuration();
 					int timeDifference = toMinutes - duration;
 					
-					if(duration < toMinutes) {
+					if(duration <= toMinutes) {
 						fromHours = toHours;
 						fromMinutes = timeDifference;
 					} else {
-						fromHours = toHours - 1;
+						fromHours = toHours - 1; 
+						if (fromHours==-1) {
+							fromHours = 23;
+						}
 						fromMinutes = 60 + timeDifference; 
 					}
 				} catch (Exception e) {
@@ -882,7 +898,60 @@ public class TourActivity extends Activity {
     	}
     	
     	private void tryToCreateATour() {
-    		
+    		JSONObject json = new JSONObject();
+			try {
+				db.openDatabase();
+				json.put("email", user.get(0));
+				json.put("depature", db.getLocationId(tour[2], tour[1]));
+				json.put("arrival", db.getLocationId(tour[3], tour[1]));
+				json.put("deptime", getDate(tvDate.getText(), tvFromTime.getText()));
+				json.put("arrtime", getDate(tvDate.getText(), tvToTime.getText()));
+				db.closeDatabase();
+				
+				String response = JSONCommunicator.postJSONObject(
+						PropertyManager.getJSONServer() + "createTourByApp", json);
+				
+				if (response.equalsIgnoreCase("error, tour could not be created") 
+						|| response.contains("Exception")) {
+					Log.i("CREATE TOUR", response.toString());
+					ErrorDialog errorDialog = new ErrorDialog(context, "Error", "Couldn't create the tour for some reasons");
+					errorDialog.show();
+					this.dismiss();
+				} else {
+					StringTokenizer st = new StringTokenizer(response, "&");
+					
+					if (st.countTokens()==3) {
+						tour[0] = st.nextToken();
+						tour[4] = getDate(tvDate.getText(), tvFromTime.getText());
+						tour[5] = getDate(tvDate.getText(), tvToTime.getText());
+						tour[6] = Integer.toString(1);
+						tour[7] = st.nextToken();
+						tour[8] = st.nextToken();
+						tour[9] = TourKind.ACTIVE.toString();
+						
+						db.openDatabase();
+						db.insertTour(tour);
+						db.closeDatabase();
+						
+						TourActivity.this.updateTourRows(false);
+						Toast.makeText(context, R.string.createTourDialog_createdTour, Toast.LENGTH_LONG).show();
+						this.dismiss();
+					} else {
+						ErrorDialog errorDialog = new ErrorDialog(context, "Error", "Couldn't create the tour for some reasons");
+						errorDialog.show();
+						this.dismiss();
+					}
+				}
+			} catch (Exception e) {
+				ErrorDialog errorDialog = new ErrorDialog(context, e.toString(), e.getMessage());
+				errorDialog.show();
+			}
+    	}
+    	
+    	private String getDate(CharSequence date, CharSequence time) throws ParseException {
+    		SimpleDateFormat df = new SimpleDateFormat("dd.MM.yyyy HH:mm");
+			Date javaDate = df.parse(date + " " + time);
+			return Long.toString(javaDate.getTime());
     	}
 	}
 }

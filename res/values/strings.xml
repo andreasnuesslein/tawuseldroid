@@ -31,10 +31,13 @@
     <string name="tourDetailsDialog_passengers">Passengers:</string>
     <string name="tourDetailsDialog_joinbutton">join</string>
     <string name="tourDetailsDialog_leavebutton">leave</string>
-    <string name="tourDetailsDialog_userJoined">You successfully joined the Tour!</string>
-    <string name="tourDetailsDialog_userLeft">You successfully left the Tour!</string>
+    <string name="tourDetailsDialog_userJoined">You successfully joined the tour!</string>
+    <string name="tourDetailsDialog_userNotJoined">You haven\'t joined the tour, an error occurred. Maybe the tour is closed already?</string>
+    <string name="tourDetailsDialog_userLeft">You successfully left the tour!</string>
+    <string name="tourDetailsDialog_userNotLeft">You haven\'t joined the tour, an error occurred.</string>
     <string name="createTourDialog_createbutton">create</string>
     <string name="createTourDialog_head">Create a new Tour</string>
     <string name="createTourDialog_date">Date:</string>
     <string name="createTourDialog_timeSeperator"> - </string>
+    <string name="createTourDialog_createdTour">You successfully created a new tour!</string>
 </resources>

@@ -1,7 +1,5 @@
 package tawusel.android.ui;
 
-import org.apache.http.HttpResponse;
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -9,7 +7,11 @@ import tawusel.andorid.R;
 import tawusel.android.LoginActivity;
 import tawusel.android.tools.communication.JSONCommunicator;
 import tawusel.android.tools.config.PropertyManager;
-import tawusel.android.validators.*;
+import tawusel.android.validators.Validator;
+import tawusel.android.validators.ValidatorEMail;
+import tawusel.android.validators.ValidatorMaxLen;
+import tawusel.android.validators.ValidatorMinLen;
+import tawusel.android.validators.ValidatorRequired;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
@@ -21,7 +23,7 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 /**
- * @author mareikeziese
+ * 
  *
  */
 public class RegisterActivity extends Activity implements OnClickListener {
@@ -53,8 +55,7 @@ public class RegisterActivity extends Activity implements OnClickListener {
 	public void onClick(View v) {
 
 		if (v == btnRegister) {
-			if (this.validateInput()) {
-				JSONObject jsonUser = new JSONObject();
+			if (validateInput()) {
 				JSONObject json = new JSONObject();
 				try {
 					json.put("email", this.etEMail.getText().toString());
@@ -63,10 +64,10 @@ public class RegisterActivity extends Activity implements OnClickListener {
 					json.put("phone", this.etMobile.getText().toString());
 					json.put("password", this.etPassword.getText().toString());
 				} catch (JSONException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					ErrorDialog errorDialog = new ErrorDialog(this, e.toString(), e.getMessage());
+					errorDialog.show();
 				}
-				if (this.writeUser(json)) {
+				if (writeUser(json)) {
 					openLoginActivity();
 				}
 			}

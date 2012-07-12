@@ -206,6 +206,10 @@ public class Database {
 		c.close();
 		return result;
 	}
+	
+	public void deleteTour(int tourId) {
+		database.delete(TOUR_TABLE_NAME, KEY_ID + " = " + tourId, null);
+	}
 
 	/**
 	 * Parses the tourData array and inserts it into the local database. Notice:

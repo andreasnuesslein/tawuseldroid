@@ -71,12 +71,12 @@ public class LoginActivity extends Activity implements OnClickListener {
 	}
 
     private void updateStableValues() {
-    	updateStableVaulesFromWebservice(statusUpdateMethodName);
-    	updateStableVaulesFromWebservice(townUpdateMethodName);
-    	updateStableVaulesFromWebservice(locationUpdateMethodName);
+    	updateStableValuesFromWebservice(statusUpdateMethodName);
+    	updateStableValuesFromWebservice(townUpdateMethodName);
+    	updateStableValuesFromWebservice(locationUpdateMethodName);
     }
     
-	private void updateStableVaulesFromWebservice(String methodName) {
+	private void updateStableValuesFromWebservice(String methodName) {
 		try {
 			JSONArray jsonArray = JSONCommunicator.getJSONArray(methodName, "", PropertyManager.getJSONServer());
 			for (int i = 0; i < jsonArray.length(); i++) {
