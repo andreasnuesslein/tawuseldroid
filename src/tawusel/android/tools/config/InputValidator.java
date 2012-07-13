@@ -3,6 +3,12 @@ package tawusel.android.tools.config;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * This class provides the methods to check if the registration
+ * data given by the user is correcty. Basically its methods match 
+ * the Strings given by the input fields with an regular expression
+ * and return booleans to validate the inputs.
+ */
 public class InputValidator {
 
 	private static Pattern pattern;

@@ -23,6 +23,10 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 
+/**
+ * This class is responsible for displaying the login screen. It is the 
+ * first class called when the app is started. 
+ */
 public class LoginActivity extends Activity implements OnClickListener {
 	private EditText etUsername, etPassword;
 	private CheckBox cbKeepMeLoggedIn;
@@ -51,10 +55,16 @@ public class LoginActivity extends Activity implements OnClickListener {
 
     }
     
+    /**
+     * This method checks if the the a user check the stay logged in box
+     * the last time it uses the app. If this is the case it can retriev 
+     * a user from the local database and it trys to login with the old
+     * user data.
+     */
     private void initDatabase() {
     	try {
 			db.openDatabase();
-			db.resetDatabase();
+//			db.resetDatabase();
 			updateStableValues();
 			Vector<String> loggedInUserData = db.getLoggedInUser();
 			if(!loggedInUserData.isEmpty()) {
@@ -76,6 +86,13 @@ public class LoginActivity extends Activity implements OnClickListener {
     	updateStableValuesFromWebservice(locationUpdateMethodName);
     }
     
+    /**
+     * Calls the {@link JSONCommunicator} and sends a request
+     * to the method specified by the parameter. Afterwards it parses the answer
+     * and writes the retrieve static values into the local database.
+     * 
+     * @param methodName 
+     */
 	private void updateStableValuesFromWebservice(String methodName) {
 		try {
 			JSONArray jsonArray = JSONCommunicator.getJSONArray(methodName, "", PropertyManager.getJSONServer());
@@ -128,6 +145,15 @@ public class LoginActivity extends Activity implements OnClickListener {
     	}
     }
     
+    /**
+     * Calls the authenticateByApp/ method of the webservice and checks 
+     * if the users has entered the right email password combination. If this 
+     * is the case {@link LoginActivity#performLogingAction(String, String)} is called,
+     * otherwise a error is shown on the screen. 
+     * 
+     * @param userEmail as a string
+     * @param hashedPassword as a string
+     */
     public void tryToLogin(String userEmail, String hashedPassword){
     	if (!(userEmail.isEmpty())){
 			try {
@@ -150,12 +176,20 @@ public class LoginActivity extends Activity implements OnClickListener {
     	}
     }
 
+    /**
+     * Writes the users data (user is logged in at this point) in the local
+     * database and opens the tour activity. 
+     * 
+     * @param email
+     * @param hashedPassword
+     */
     private void performLogingAction(String email, String hashedPassword) {
     	//save the setting in the db
 		try {
 			db.openDatabase();
 			db.clearUserTable();
     	
+			//set a flag if a user was to stay logged in
 			if(cbKeepMeLoggedIn != null && cbKeepMeLoggedIn.isChecked()) {
 				db.setUserLoggedIn(email, hashedPassword, 1);
 			} else {

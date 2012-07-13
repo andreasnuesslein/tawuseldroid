@@ -6,6 +6,11 @@ import android.app.Dialog;
 import android.content.Context;
 import android.widget.TextView;
 
+/**
+ * A subclass of dialog which is used to display exception and
+ * error messages on the screen. 
+ *
+ */
 public class ErrorDialog extends Dialog {
 
 	public ErrorDialog(Context context, String exceptionName, String exceptionMessage) {

@@ -5,6 +5,13 @@ import java.util.Date;
 
 import tawusel.android.enums.TourKind;
 
+/**
+ * This helper class provides a method to get time string
+ * which can be displayed in the tours table. It is calculated
+ * out of the depature timestamp and the arrival timestamp retrieved
+ * by the webservie. 
+ *
+ */
 public class Time {
 
 	public static String formatString(String depTimeString, String arrTimeString, TourKind tourKind) {

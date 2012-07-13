@@ -33,7 +33,9 @@ import android.util.Log;
 import android.widget.Toast;
 
 /**
- * @author mareikeziese
+ * This class is responsible for the communication to the webservice.
+ * It starts the requests on the REST api and converts the replay to 
+ * json objects or arrays.
  *
  */
 public class JSONCommunicator {
@@ -41,11 +43,13 @@ public class JSONCommunicator {
 	private static final String TAG = "JSONCommunicator";
 
 	/**
-	 * Get the json-result of the url
+	 * The method starts a HTTP Request on the webservice and
+	 * returns the reply as an array.
 	 * 
-	 * @param String
-	 *            url
-	 * @return JSONObject
+	 * @param method - the method string which describes the method called on serverside
+	 * @param params - a string which contains the parameters for the method
+	 * @param serverUrl - the url of the server the webservice is running on
+	 * @return a JSONArray object
 	 * @throws Exception
 	 */
 	public static JSONArray getJSONArray(String method, String params,
@@ -85,12 +89,13 @@ public class JSONCommunicator {
 
 	
 	/**
-	 * gets a JsonObject via HttpGet form the json-server
+	 * The method starts a HTTP Request on the webservice and
+	 * returns the reply as an object.
 	 * 
-	 * @param method
-	 * @param params
-	 * @param serverUrl
-	 * @return JSONObject
+	 * @param method - the method string which describes the method called on serverside
+	 * @param params - a string which contains the parameters for the method
+	 * @param serverUrl - the url of the server the webservice is running on
+	 * @return a JSONArray object
 	 * @throws Exception
 	 */
 	public static JSONObject getJSONObject(String method, String params,
@@ -151,7 +156,6 @@ public class JSONCommunicator {
 			return "";
 		}
 	}
-
 	
 	/**
 	 * convert a byte[] field to a String

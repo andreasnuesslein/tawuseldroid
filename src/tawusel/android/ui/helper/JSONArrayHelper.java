@@ -5,6 +5,12 @@ import java.util.Vector;
 import org.json.JSONArray;
 import org.json.JSONException;
 
+/**
+ * This class provides to method to sort json array, because 
+ * the are parsed in arbitary order and in some methods there
+ * is a specific ordering needed.
+ *
+ */
 public class JSONArrayHelper {
 
 	public static Vector<JSONArray> sort(Vector<JSONArray> arrays) throws JSONException {

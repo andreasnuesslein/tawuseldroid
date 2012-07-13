@@ -22,7 +22,6 @@ import tawusel.android.tools.config.PropertyManager;
 import tawusel.android.ui.helper.JSONArrayHelper;
 import tawusel.android.ui.helper.Time;
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.app.TimePickerDialog;
@@ -48,6 +47,16 @@ import android.widget.TextView;
 import android.widget.TimePicker;
 import android.widget.Toast;
 
+/**
+ * This is the main class of the app. It is responsible for
+ * displaying the tours table, opening the specific details or 
+ * create dialogs and showing the apps's menu.<br><br>
+ * 
+ * It contains to private sub classes which extend android.app.Dialog 
+ * and need to have access to the {@link TourActivity#updateTourRows(boolean)} 
+ * method.
+ * ({@link TourDetailsDialog} & {@link CreateTourDialog}
+ */
 public class TourActivity extends Activity {
 	final Context context = this; 
 	Database db = new Database(TourActivity.this);
@@ -77,6 +86,9 @@ public class TourActivity extends Activity {
     	updateTourRows(false);
     }
     
+    /**
+     * Displays the menu defiened in the res/menu/menu.xml
+     */
 	@Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
@@ -104,7 +116,7 @@ public class TourActivity extends Activity {
 	            return super.onOptionsItemSelected(item);
 	    }
 	}
-
+	
 	private void performManualUpdate() {
 		db.openDatabase();
 		db.clearTemplateTable();
@@ -112,6 +124,12 @@ public class TourActivity extends Activity {
 		updateTourRows(true);
 	}
 
+	/**
+	 * Updates the rows in the tours table
+	 * 
+	 * @param updateLocalDbFromService a boolean which represents if the
+	 * update should ask the webservice for new data or just the local db
+	 */
 	public void updateTourRows(boolean updateLocalDbFromService) {
 		if (updateLocalDbFromService) {
 			updateTourDataFromWebService();
@@ -120,6 +138,9 @@ public class TourActivity extends Activity {
 		createTourViews();
 	}
 	
+	/**
+	 * Deletes all rows from the tour table except for the head row.
+	 */
 	private void clearTourRows() {
 		for (int i = tblTours.getChildCount(); i > 0; i--) {
 			tblTours.removeView(tblTours.getChildAt(i));
@@ -147,6 +168,15 @@ public class TourActivity extends Activity {
 		}
 	}
 	
+	/**
+	 * Calls the webservice by its REST api to retrieve new tours. The first 
+	 * parameter defines the type of tours which should be retrieved by this 
+	 * execution of the method
+	 * 
+	 * @param methodName as a string
+	 * @param isTemplateTour as a boolean
+	 * @throws Exception
+	 */
 	private void getToursFromWebservice(String methodName, boolean isTemplateTour) throws Exception {
 		Vector<String> userEntry = getLoggedInUser();
 		String encodedEMail = URLEncoder.encode(userEntry.get(0));
@@ -191,6 +221,13 @@ public class TourActivity extends Activity {
 		}
 	}
 	
+	/**
+	 * After the data was updated this method starts to fill the tours table
+	 * dynamically. It adds a row with the data of the Tour which is given as 
+	 * a parameter.
+	 * 
+	 * @param tourFromDb as a string array
+	 */
 	private void addTourRow(String[] tourFromDb) {
 		String[] tour = tourFromDb;
 		TourKind tourKind = TourKind.parseTourKind(tour[9]);
@@ -219,6 +256,13 @@ public class TourActivity extends Activity {
                 LayoutParams.FILL_PARENT));
 	}
 	
+	/**
+	 * Loads the specific background for the type of tour in the table row
+	 * object and returns it back to the calling method.
+	 *  
+	 * @param tourKind
+	 * @return a table row object
+	 */
 	private TableRow createNewRowLayout(TourKind tourKind) {
 		TableRow newRow = new TableRow(this);
 		newRow.setLayoutParams(new LayoutParams(
@@ -242,6 +286,14 @@ public class TourActivity extends Activity {
 		return newRow;
 	}
 
+	/**
+	 * Sets the text color of the text views in the specific row in dependence
+	 * of the tour type.
+	 * 
+	 * @param columnText
+	 * @param tourKind
+	 * @return
+	 */
 	private TextView createNewColumnText(String columnText, TourKind tourKind) {
 		TextView tvColumn = new TextView(this);
 		tvColumn.setLayoutParams(new LayoutParams(0, LayoutParams.FILL_PARENT, 1));
@@ -254,6 +306,15 @@ public class TourActivity extends Activity {
 		return tvColumn;
 	}
 
+	/**
+	 * Defines the action which happens if the users clicks on a row in
+	 * the tour table. If this row was a row with a template tour a new
+	 * create tour dialog is opened. Otherwise a tour details dialog is 
+	 * shown on the screen
+	 * 
+	 * @param newRow - the row the listener should be attached to
+	 * @return
+	 */
 	private TableRow appendOnClickListener(TableRow newRow) {
 		newRow.setOnClickListener(new OnClickListener() {
 		       public void onClick(View v) {
@@ -336,6 +397,15 @@ public class TourActivity extends Activity {
 		super.onDestroy();
 	}
 	
+	/**
+	 * This class is responsible for the displaying of a tour details
+	 * dialog. Therefore it extends android.app.Dialog. Since it contains buttons
+	 * it has to implement android.view.View.OnClickListener as well. It is 
+	 * implemented as a private class because it needs to have access to the 
+	 * {@link TourActivity#updateTourRows(boolean)}, which is not possible if it was
+	 * a class defined in another file.
+	 *
+	 */
 	private class TourDetailsDialog extends Dialog implements OnClickListener {
 		Database db;
 		
@@ -392,6 +462,13 @@ public class TourActivity extends Activity {
 			tvPassengers.setText(getPassengers(tour[7]));
 		}
 		
+		/**
+		 * Calls the webservice by its REST api to retrieve all passenger of 
+		 * the current tour. It is called when the text values are set.
+		 * 
+		 * @param jsonArrayString
+		 * @return a string with the firstnames of all passengers seperated by ","
+		 */
 		private String getPassengers(String jsonArrayString) {
 			String passengers = "";
 			try {
@@ -420,6 +497,11 @@ public class TourActivity extends Activity {
 			}
 		}
 		   
+		/**
+		 * Disables either the join or the leave button depending on the 
+		 * list of passengers. If the user is in it the leave button is 
+		 * acitvated, otherwise the join button.
+		 */
 		private void disableButton() {
 			//check if emailstring of logged in user is contained in pessengers
 			boolean isUserPassengerOfTour = tour[7].contains(user.get(0));
@@ -456,6 +538,10 @@ public class TourActivity extends Activity {
 			}
 		}
 		
+		/**
+		 * Calls the webservice by its REST api to try to join the current tour. If 
+		 * this action was successful the tour is copied into the local database.
+		 */
 		private boolean tryToJoinTour() {
 			String params = URLEncoder.encode(user.get(0)) + "/" + tour[0];
 			try {
@@ -479,6 +565,11 @@ public class TourActivity extends Activity {
 			}
 		}
 
+		/**
+		 * Calls the webservice by its REST api to try to leave the current tour. If 
+		 * this action was successful the tour in the local database is updated. If the
+		 * user was the only passenger of the tour it is deleted from the local database.
+		 */
 		private boolean tryToLeaveTour() {
 			String params = URLEncoder.encode(user.get(0)) + "/" + tour[0];
 			try {
@@ -523,7 +614,16 @@ public class TourActivity extends Activity {
 			tour[8] = result.getString("mod");
 		}
 	}
-		
+	
+	/**
+	 * This class is responsible for the displaying of a create tour 
+	 * dialog. Therefore it extends android.app.Dialog. Since it contains buttons
+	 * it has to implement android.view.View.OnClickListener as well. It is 
+	 * implemented as a private class because it needs to have access to the 
+	 * {@link TourActivity#updateTourRows(boolean)}, which is not possible if it was
+	 * a class defined in another file.
+	 *
+	 */
 	private class CreateTourDialog extends Dialog implements OnClickListener, OnItemSelectedListener {
 		Database db;
 		
@@ -552,7 +652,14 @@ public class TourActivity extends Activity {
 		private int toMinutes;
 		private String estimateRequest = "googleest/";
 		
-		
+		/**
+		 * This constructor is called by clicking on a template row in the tours
+		 * table. The existing tour data is used for the hole class.
+		 * 
+		 * @param context
+		 * @param tour
+		 * @param user
+		 */
 		@SuppressWarnings("unchecked")
 		public CreateTourDialog(Context context, String[] tour, Vector<String> user) {
 			super(context);
@@ -574,6 +681,12 @@ public class TourActivity extends Activity {
 	 	   	updateTvTimes();
 		}
 		
+		/**
+		 * This constructor is called if the dialog is opend by the menu.
+		 * Therefoe a tour must be generated by inital values.
+		 * @param context
+		 * @param user
+		 */
 		@SuppressWarnings("unchecked")
 		public CreateTourDialog(Context context, Vector<String> user) {
 			super(context);
@@ -692,6 +805,11 @@ public class TourActivity extends Activity {
 			spTo.setSelection(toLocationSpinnerSelectedId);
 		}
 		
+		/**
+		 * This method is called if an item was selceted in one of the three spinners.
+		 * If the city spinners selected item has changed the location spinners have to 
+		 * be adapted as well.
+		 */
 		public void onItemSelected(AdapterView<?> parent, View v, int pos, long id) {
 			if(parent==spCity) {
 				townSpinnerSelectedId = pos;
@@ -749,6 +867,10 @@ public class TourActivity extends Activity {
 			return df.format(date);
 		}
 		
+		/**
+		 * This method checks if the tours start time lies in the past. In this
+		 * case the next day is the suggested day of the journey.
+		 */
 		private void initSuggestedDate() {
 			String depTime = getTimeString(new Date(Long.parseLong(tour[4])));
 			String arrTime = getTimeString(new Date(Long.parseLong(tour[5])));
@@ -793,6 +915,10 @@ public class TourActivity extends Activity {
 			}
 		}
 
+		/**
+		 * If one clicks on the dates or times textfields a picker dialog is opened.
+		 * In this dialog the user can choose the time desired.
+		 */
 		public void onClick(View v) {
 			if(v==tvDate) {
 				//wtf? does it start at moth + 1?
@@ -809,6 +935,10 @@ public class TourActivity extends Activity {
 			}
 		}
 
+		/**
+		 * The callback method of the date picker. This one is called 
+		 * if a user closes the date picker with the ok button.
+		 */
 		private DatePickerDialog.OnDateSetListener dateSetListener =
                 new DatePickerDialog.OnDateSetListener() {
 
@@ -821,7 +951,10 @@ public class TourActivity extends Activity {
                 }
         };
         
-            
+        /**
+		 * The callback method of the from time picker. This one is called 
+		 * if a user closes the from time picker with the ok button.
+		 */    
         private TimePickerDialog.OnTimeSetListener fromTimeSetListener = 
                 new TimePickerDialog.OnTimeSetListener() {
     		
@@ -852,6 +985,10 @@ public class TourActivity extends Activity {
 	    		}
     	};
     	
+    	/**
+		 * The callback method of the to time picker. This one is called 
+		 * if a user closes the to time picker with the ok button.
+		 */
     	private TimePickerDialog.OnTimeSetListener toTimeSetListener = 
                 new TimePickerDialog.OnTimeSetListener() {
     		
@@ -897,6 +1034,11 @@ public class TourActivity extends Activity {
 			return minutesObject.getInt("dur");
     	}
     	
+    	/**
+    	 * This method sends a post request to the webservice. With this request
+    	 * the webservice tries to create a new tour. If it could be created a duplicate
+    	 * is written into the local database. Otherwise a error dialog is shown
+    	 */
     	private void tryToCreateATour() {
     		JSONObject json = new JSONObject();
 			try {
@@ -918,6 +1060,7 @@ public class TourActivity extends Activity {
 					errorDialog.show();
 					this.dismiss();
 				} else {
+					//the webservice returns the id & the users & the mod 
 					StringTokenizer st = new StringTokenizer(response, "&");
 					
 					if (st.countTokens()==3) {

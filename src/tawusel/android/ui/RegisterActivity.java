@@ -23,8 +23,7 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 /**
- * 
- *
+ * This activity is responsible for displaying the register mask.
  */
 public class RegisterActivity extends Activity implements OnClickListener {
 

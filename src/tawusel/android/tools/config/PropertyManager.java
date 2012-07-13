@@ -24,7 +24,6 @@ import android.graphics.Color;
  * @see #getBooleanProperty(String, boolean)
  * @see PropertyManager
  * 
- * @author Sebastian Schulz
  */
 public class PropertyManager {
 	protected static Properties properties = new Properties();
