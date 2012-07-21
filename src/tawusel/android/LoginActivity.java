@@ -64,7 +64,8 @@ public class LoginActivity extends Activity implements OnClickListener {
     private void initDatabase() {
     	try {
 			db.openDatabase();
-//			db.resetDatabase();
+			db.clearTourTable();
+			db.clearTemplateTable();
 			updateStableValues();
 			Vector<String> loggedInUserData = db.getLoggedInUser();
 			if(!loggedInUserData.isEmpty()) {
